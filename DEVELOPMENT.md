@@ -146,18 +146,20 @@ module_name/
 ### Example: Creating a New Endpoint
 
 1. **Define Model** (`models.py`):
+
 ```python
 from app.core.database import Base
 from sqlalchemy import Column, Integer, String
 
 class MyEntity(Base):
     __tablename__ = "my_entities"
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String(255))
 ```
 
 2. **Define Schema** (`schemas.py`):
+
 ```python
 from pydantic import BaseModel
 
@@ -170,6 +172,7 @@ class MyEntityOut(BaseModel):
 ```
 
 3. **Define Service** (`services.py`):
+
 ```python
 from sqlalchemy.orm import Session
 
@@ -184,6 +187,7 @@ class MyService:
 ```
 
 4. **Define Route** (`routes.py`):
+
 ```python
 from fastapi import APIRouter, Depends
 
@@ -213,6 +217,7 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -283,6 +288,7 @@ curl -X POST http://localhost:8000/api/v1/hourly-incomes \
 ### Enable Debug Logging
 
 Set in `.env`:
+
 ```env
 DEBUG=True
 LOG_LEVEL=DEBUG
@@ -291,6 +297,7 @@ LOG_LEVEL=DEBUG
 ### View Database
 
 Using SQLite CLI:
+
 ```bash
 sqlite3 clfms.db
 
@@ -316,6 +323,7 @@ kill -9 <PID>
 ### Database Locked
 
 Delete the SQLite database and restart:
+
 ```bash
 rm clfms.db
 # Restart application
@@ -324,6 +332,7 @@ rm clfms.db
 ### Import Errors
 
 Ensure virtual environment is activated and dependencies installed:
+
 ```bash
 source venv/bin/activate
 pip install -r requirements.txt
@@ -383,6 +392,7 @@ docker-compose up -d
 ## Support
 
 For issues or questions:
+
 1. Check existing issues in GitHub
 2. Create a new issue with details
 3. Contact development team
