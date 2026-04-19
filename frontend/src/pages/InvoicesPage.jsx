@@ -70,8 +70,10 @@ export default function InvoicesPage() {
 
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
-      invoice.invoice_number?.includes(searchTerm) ||
-      invoice.client_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      invoice.invoice_number
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      String(invoice.project_id)?.includes(searchTerm);
     const matchesStatus =
       statusFilter === "all" || invoice.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -215,7 +217,7 @@ export default function InvoicesPage() {
                       {invoice.invoice_number}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {invoice.client_name}
+                      Project #{invoice.project_id}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       ${(invoice.total || 0).toFixed(2)}

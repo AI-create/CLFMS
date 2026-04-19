@@ -5,7 +5,7 @@ import { Plus, Edit, AlertCircle, Loader, ClipboardList } from "lucide-react";
 const API_URL = "/api/v1";
 
 const STATUSES = [
-  "pending",
+  "assigned",
   "in_progress",
   "completed",
   "cancelled",
@@ -14,7 +14,7 @@ const STATUSES = [
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 
 const STATUS_COLORS = {
-  pending: "badge-yellow",
+  assigned: "badge-yellow",
   in_progress: "badge-blue",
   completed: "badge-green",
   cancelled: "badge-red",
@@ -144,7 +144,9 @@ export default function OperationsPage() {
     }
   };
 
-  const pendingCount = assignments.filter((t) => t.status === "pending").length;
+  const pendingCount = assignments.filter(
+    (t) => t.status === "assigned",
+  ).length;
   const inProgressCount = assignments.filter(
     (t) => t.status === "in_progress",
   ).length;
@@ -178,7 +180,7 @@ export default function OperationsPage() {
           <p className="metric-value text-2xl">{total}</p>
         </div>
         <div className="card-lg">
-          <p className="metric-label">Pending</p>
+          <p className="metric-label">Assigned</p>
           <p className="metric-value text-2xl text-yellow-600">
             {pendingCount}
           </p>

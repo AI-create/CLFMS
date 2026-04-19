@@ -33,7 +33,12 @@ export default function InvoiceForm({ onClose, onSubmit }) {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "due_days" || name === "rate" ? (value ? parseFloat(value) : "") : value,
+      [name]:
+        name === "due_days" || name === "rate"
+          ? value
+            ? parseFloat(value)
+            : ""
+          : value,
     }));
   };
 
@@ -49,7 +54,8 @@ export default function InvoiceForm({ onClose, onSubmit }) {
         rate: parseFloat(formData.rate) || 0,
         due_days: parseInt(formData.due_days) || 30,
       };
-      if (formData.invoice_number) payload.invoice_number = formData.invoice_number;
+      if (formData.invoice_number)
+        payload.invoice_number = formData.invoice_number;
       await axios.post(`${API_URL}/invoices/generate`, payload);
       onSubmit();
     } catch (err) {
@@ -65,7 +71,10 @@ export default function InvoiceForm({ onClose, onSubmit }) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
           <h2 className="text-xl font-bold text-gray-900">Generate Invoice</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
             <X size={24} />
           </button>
         </div>
@@ -117,7 +126,7 @@ export default function InvoiceForm({ onClose, onSubmit }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Rate (â‚¹/hr)
+                Rate (₹/hr)
               </label>
               <input
                 type="number"

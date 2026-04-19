@@ -134,7 +134,7 @@ export default function OnboardingPage() {
                   <option value="">Select a client</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {c.company_name}
                     </option>
                   ))}
                 </select>
