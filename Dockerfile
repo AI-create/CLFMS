@@ -22,7 +22,6 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,10 +34,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ app/
 COPY alembic/ alembic/
-COPY alembic.ini .
+COPY tests/ tests/
+COPY templates/ templates/
+# Copy alembic.ini if it exists
+COPY alembic.ini* .
 
 # Copy built frontend from builder stage
-COPY --from=frontend-builder /app/frontend/app/static/frontend app/static/frontend
+COPY --from=frontend-builder /app/app/static/frontend app/static/frontend
 
 # Create uploads directory
 RUN mkdir -p uploads/documents

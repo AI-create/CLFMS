@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import Dashboard from "./pages/Dashboard";
 import ClientsPage from "./pages/ClientsPage";
@@ -6,6 +6,7 @@ import ProjectsPage from "./pages/ProjectsPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import FinancialReportsPage from "./pages/FinancialReportsPage";
+import LoginPage from "./pages/LoginPage";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import "./index.css";
@@ -14,19 +15,37 @@ const API_URL = "/api/v1";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
-  const [token] = useState(localStorage.getItem("token") || null);
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  });
 
   // Setup axios interceptor for token
-  if (token) {
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  }
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common["Authorization"];
+    }
+  }, [token]);
+
+  const handleLoginSuccess = (newToken, newUser) => {
+    setToken(newToken);
+    setUser(newUser);
+    setCurrentPage("dashboard");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setToken(null);
+    setUser(null);
+    delete axios.defaults.headers.common["Authorization"];
+  };
 
   if (!token) {
-    return (
-      <div className="p-8 text-center">
-        Please log in to access the dashboard
-      </div>
-    );
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
   const renderPage = () => {
@@ -52,7 +71,7 @@ export default function App() {
     <div className="flex h-screen bg-gray-50">
       <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header user={user} onLogout={handleLogout} />
         <main className="flex-1 overflow-auto">{renderPage()}</main>
       </div>
     </div>

@@ -81,11 +81,6 @@ if settings.cors_origins:
     )
 
 
-@app.get("/")
-def health():
-    return {"success": True, "message": "CLFMS API is running"}
-
-
 app.include_router(auth_router, prefix=API_PREFIX)
 app.include_router(leads_router, prefix=API_PREFIX)
 app.include_router(clients_router, prefix=API_PREFIX)
@@ -104,7 +99,12 @@ app.include_router(research_router, prefix=API_PREFIX)
 app.include_router(operations_router, prefix=API_PREFIX)
 app.include_router(fiio_router, prefix=API_PREFIX)
 
-# Serve frontend static files
+# Serve frontend static files (must be mounted after all routes)
 frontend_static_path = Path(__file__).parent / "static" / "frontend"
 if frontend_static_path.exists():
     app.mount("/", StaticFiles(directory=str(frontend_static_path), html=True), name="frontend")
+else:
+    # Fallback if frontend files don't exist
+    @app.get("/")
+    def health():
+        return {"success": True, "message": "CLFMS API is running"}
