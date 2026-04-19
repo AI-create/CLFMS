@@ -98,13 +98,13 @@ export default function CustomMetric({ title, value }) {
       <h3 className="metric-label">{title}</h3>
       <p className="metric-value">{value}</p>
     </div>
-  )
+  );
 }
 
 // In App.jsx
-import CustomMetric from './components/CustomMetric'
+import CustomMetric from "./components/CustomMetric";
 // ... in JSX
-<CustomMetric title="Example" value="123" />
+<CustomMetric title="Example" value="123" />;
 ```
 
 ### Styling
@@ -112,12 +112,14 @@ import CustomMetric from './components/CustomMetric'
 The frontend uses Tailwind CSS for styling with custom theme extensions:
 
 **Colors:**
+
 - `primary-*` - Primary brand color (sky blue)
 - `success` - Green for positive metrics
 - `warning` - Orange for warnings
 - `danger` - Red for negative metrics
 
 **Component Classes:**
+
 - `.card` - Base card style
 - `.card-lg` - Large card with padding
 - `.metric-label` - Small metric labels
@@ -127,6 +129,7 @@ The frontend uses Tailwind CSS for styling with custom theme extensions:
 ### Tailwind Configuration
 
 Edit `tailwind.config.js` to customize:
+
 - Color scheme
 - Typography
 - Spacing
@@ -139,7 +142,9 @@ Example:
 theme: {
   extend: {
     colors: {
-      primary: { /* custom colors */ }
+      primary: {
+        /* custom colors */
+      }
     }
   }
 }
@@ -157,7 +162,7 @@ VITE_API_PREFIX=/api/v1
 Then use in code:
 
 ```jsx
-const API_URL = import.meta.env.VITE_API_PREFIX
+const API_URL = import.meta.env.VITE_API_PREFIX;
 ```
 
 ## Charting
@@ -167,24 +172,24 @@ The frontend uses **Recharts** for data visualization. Examples:
 ### Line Chart (Profit Trend)
 
 ```jsx
-import { LineChart, Line, XAxis, YAxis } from 'recharts'
+import { LineChart, Line, XAxis, YAxis } from "recharts";
 
 <LineChart data={data}>
   <XAxis dataKey="date" />
   <YAxis />
   <Line type="monotone" dataKey="profit" stroke="#0ea5e9" />
-</LineChart>
+</LineChart>;
 ```
 
 ### Bar Chart (Financial Summary)
 
 ```jsx
-import { BarChart, Bar } from 'recharts'
+import { BarChart, Bar } from "recharts";
 
 <BarChart data={data}>
   <Bar dataKey="income" fill="#3b82f6" />
   <Bar dataKey="expenses" fill="#f59e0b" />
-</BarChart>
+</BarChart>;
 ```
 
 For more examples, see the component files.
@@ -233,10 +238,10 @@ const mockKPIs = {
   total_expenses: 25000,
   net_profit: 25000,
   pending_payments: 5000,
-}
+};
 
 // Use in component
-setKpis(mockKPIs)
+setKpis(mockKPIs);
 ```
 
 ## Deployment
@@ -275,6 +280,7 @@ To deploy frontend separately:
 ### Issue: "Failed to load dashboard data"
 
 **Causes & Solutions:**
+
 1. Backend not running - Start backend: `uvicorn app.main:app --reload`
 2. CORS error - Check `cors_origins` in `app/core/config.py`
 3. Wrong API URL - Verify `API_URL` in App.jsx
@@ -349,6 +355,7 @@ npm run build
 ## Support
 
 For questions or issues:
+
 1. Check this guide
 2. Review component source code
 3. Check browser console for errors
@@ -356,5 +363,5 @@ For questions or issues:
 
 ---
 
-*Last Updated: April 19, 2026*
-*Frontend Version: 1.0.0*
+_Last Updated: April 19, 2026_
+_Frontend Version: 1.0.0_
