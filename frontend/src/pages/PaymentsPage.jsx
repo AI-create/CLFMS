@@ -10,7 +10,6 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
 
@@ -22,7 +21,7 @@ export default function PaymentsPage() {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/payments`);
-      setPayments(response.data.data || response.data);
+      setPayments(response.data.data?.data || []);
       setError(null);
     } catch (err) {
       console.error("Error fetching payments:", err);
@@ -56,11 +55,10 @@ export default function PaymentsPage() {
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
-      payment.invoice_number?.includes(searchTerm) ||
-      payment.payment_method?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || payment.status === statusFilter;
-    return matchesSearch && matchesStatus;
+      String(payment.invoice_id)?.includes(searchTerm) ||
+      payment.method?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const getStatusColor = (status) => {
@@ -106,38 +104,25 @@ export default function PaymentsPage() {
           </p>
         </div>
         <div className="card-lg">
-          <p className="metric-label">Completed Payments</p>
+          <p className="metric-label">No. of Payments</p>
           <p className="metric-value text-2xl text-green-600">
-            $
-            {getTotalAmount(
-              filteredPayments.filter((p) => p.status === "completed"),
-            ).toFixed(2)}
+            {filteredPayments.length}
           </p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           <input
             type="text"
-            placeholder="Search payments..."
+            placeholder="Search by invoice ID, method, or reference..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-        >
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="completed">Completed</option>
-          <option value="failed">Failed</option>
-        </select>
       </div>
 
       {/* Payments Table */}
@@ -166,7 +151,7 @@ export default function PaymentsPage() {
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Status
+                  Reference
                 </th>
                 <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
                   Actions
@@ -177,7 +162,7 @@ export default function PaymentsPage() {
               {filteredPayments.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan="6"
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     {searchTerm
@@ -192,28 +177,21 @@ export default function PaymentsPage() {
                       {payment.id}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {payment.invoice_number}
+                      Invoice #{payment.invoice_id}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       ${(payment.amount || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {payment.payment_method || "-"}
+                      {payment.method || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {payment.payment_date
                         ? new Date(payment.payment_date).toLocaleDateString()
                         : "-"}
                     </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                          payment.status,
-                        )}`}
-                      >
-                        {payment.status?.charAt(0).toUpperCase() +
-                          payment.status?.slice(1)}
-                      </span>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {payment.reference || "-"}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button

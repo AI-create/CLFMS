@@ -15,6 +15,32 @@ from app.services.activity_logging_service import log_activity
 router = APIRouter(tags=["Documents"])
 
 
+@router.get("/documents")
+def list_documents(
+    entity_type: str | None = None,
+    entity_id: int | None = None,
+    page: int = 1,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    from app.modules.documents.models import Document as DocumentModel
+    from sqlalchemy import desc as sa_desc
+    query = db.query(DocumentModel)
+    if entity_type:
+        query = query.filter(DocumentModel.entity_type == entity_type)
+    if entity_id:
+        query = query.filter(DocumentModel.entity_id == entity_id)
+    total = query.count()
+    docs = query.order_by(sa_desc(DocumentModel.created_at)).offset((page - 1) * limit).limit(limit).all()
+    return api_success(
+        {
+            "data": [DocumentOut.model_validate(d) for d in docs],
+            "meta": {"total": total, "page": page, "limit": limit},
+        }
+    )
+
+
 @router.post("/documents/generate")
 def generate_document(
     payload: GenerateDocumentRequest,

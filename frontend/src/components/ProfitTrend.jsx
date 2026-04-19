@@ -12,7 +12,9 @@ import {
 import { TrendingUp } from "lucide-react";
 
 export default function ProfitTrend({ data }) {
-  if (!data?.trends || data.trends.length === 0) {
+  // data = axios response: {success, data: {data: [...DailyProfitTrendOut], meta: {}}}
+  const trendList = data?.data?.data || [];
+  if (trendList.length === 0) {
     return (
       <div className="card-lg">
         <p className="text-gray-600">No profit trend data available</p>
@@ -21,14 +23,14 @@ export default function ProfitTrend({ data }) {
   }
 
   // Transform data for chart
-  const chartData = data.trends.slice(-30).map((day) => ({
+  const chartData = trendList.slice(-30).map((day) => ({
     date: new Date(day.date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
     }),
     profit: day.profit || 0,
     income: day.income || 0,
-    expenses: day.expenses || 0,
+    expenses: day.expense || 0,
   }));
 
   const avgProfit =

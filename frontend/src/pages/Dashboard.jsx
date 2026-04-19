@@ -71,27 +71,23 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <KPICard
                 title="Total Revenue"
-                value={`$${(kpis.total_revenue || 0).toFixed(2)}`}
-                change={kpis.revenue_trend}
+                value={`$${(kpis.data?.revenue || 0).toFixed(2)}`}
                 icon="TrendingUp"
               />
               <KPICard
-                title="Total Expenses"
-                value={`$${(kpis.total_expenses || 0).toFixed(2)}`}
-                change={kpis.expense_trend}
-                icon="TrendingDown"
-              />
-              <KPICard
                 title="Net Profit"
-                value={`$${(kpis.net_profit || 0).toFixed(2)}`}
-                change={kpis.profit_trend}
+                value={`$${(kpis.data?.profit || 0).toFixed(2)}`}
                 icon="Target"
               />
               <KPICard
                 title="Pending Payments"
-                value={`$${(kpis.pending_payments || 0).toFixed(2)}`}
-                change={-kpis.pending_trend}
+                value={`$${(kpis.data?.pending_payments || 0).toFixed(2)}`}
                 icon="AlertCircle"
+              />
+              <KPICard
+                title="Active Projects"
+                value={kpis.data?.active_projects || 0}
+                icon="Briefcase"
               />
             </div>
           )}

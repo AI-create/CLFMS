@@ -21,7 +21,7 @@ export default function ClientsPage() {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/clients`);
-      setClients(response.data.data || response.data);
+      setClients(response.data.data?.data || []);
       setError(null);
     } catch (err) {
       console.error("Error fetching clients:", err);
@@ -54,8 +54,8 @@ export default function ClientsPage() {
 
   const filteredClients = clients.filter(
     (client) =>
-      client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+      client.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.contact_email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -104,7 +104,7 @@ export default function ClientsPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Name
+                  Company Name
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                   Email
@@ -113,14 +113,14 @@ export default function ClientsPage() {
                   Phone
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Company
+                  State
                 </th>
                 <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody divide-y divide-gray-200>
+            <tbody className="divide-y divide-gray-200">
               {filteredClients.length === 0 ? (
                 <tr>
                   <td
@@ -136,16 +136,16 @@ export default function ClientsPage() {
                 filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {client.name}
+                      {client.company_name}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {client.email}
+                      {client.contact_email || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {client.phone || "-"}
+                      {client.contact_phone || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {client.company || "-"}
+                      {client.state || "-"}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button

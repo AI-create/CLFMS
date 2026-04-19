@@ -5,8 +5,8 @@ import { AlertCircle, Loader } from "lucide-react";
 const API_URL = "/api/v1";
 
 export default function LoginPage({ onLoginSuccess }) {
-  const [email, setEmail] = useState("admin@clfms.com");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("admin@clfms.local");
+  const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -73,13 +73,13 @@ export default function LoginPage({ onLoginSuccess }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@clfms.com"
+                placeholder="admin@clfms.local"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 required
                 disabled={loading}
               />
               <p className="mt-1 text-xs text-gray-500">
-                Demo: admin@clfms.com
+                Demo: admin@clfms.local
               </p>
             </div>
 
@@ -97,7 +97,7 @@ export default function LoginPage({ onLoginSuccess }) {
                 required
                 disabled={loading}
               />
-              <p className="mt-1 text-xs text-gray-500">Demo: password</p>
+              <p className="mt-1 text-xs text-gray-500">Demo: admin123</p>
             </div>
 
             {/* Submit */}
@@ -115,7 +115,7 @@ export default function LoginPage({ onLoginSuccess }) {
           <div className="mt-8 pt-8 border-t border-gray-200 text-center text-sm text-gray-600">
             <p>Demo Credentials</p>
             <p className="mt-2">
-              <strong>Email:</strong> admin@clfms.com
+              <strong>Email:</strong> admin@clfms.local
             </p>
             <p>
               <strong>Password:</strong> password

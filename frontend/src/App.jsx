@@ -6,6 +6,18 @@ import ProjectsPage from "./pages/ProjectsPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import FinancialReportsPage from "./pages/FinancialReportsPage";
+import TasksPage from "./pages/TasksPage";
+import EmployeesPage from "./pages/EmployeesPage";
+import LeadsPage from "./pages/LeadsPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import ResearchPage from "./pages/ResearchPage";
+import DocumentsPage from "./pages/DocumentsPage";
+import ClosurePage from "./pages/ClosurePage";
+import FiioPage from "./pages/FiioPage";
+import FilesPage from "./pages/FilesPage";
+import ActivityLogsPage from "./pages/ActivityLogsPage";
+import ExpensesPage from "./pages/ExpensesPage";
+import OperationsPage from "./pages/OperationsPage";
 import LoginPage from "./pages/LoginPage";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -54,6 +66,8 @@ export default function App() {
         return <Dashboard />;
       case "clients":
         return <ClientsPage />;
+      case "leads":
+        return <LeadsPage />;
       case "projects":
         return <ProjectsPage />;
       case "invoices":
@@ -62,6 +76,28 @@ export default function App() {
         return <PaymentsPage />;
       case "financial-reports":
         return <FinancialReportsPage />;
+      case "tasks":
+        return <TasksPage />;
+      case "employees":
+        return <EmployeesPage />;
+      case "onboarding":
+        return <OnboardingPage />;
+      case "research":
+        return <ResearchPage />;
+      case "documents":
+        return <DocumentsPage />;
+      case "closure":
+        return <ClosurePage />;
+      case "fiio":
+        return <FiioPage />;
+      case "files":
+        return <FilesPage />;
+      case "activity-logs":
+        return <ActivityLogsPage />;
+      case "expenses":
+        return <ExpensesPage />;
+      case "operations":
+        return <OperationsPage />;
       default:
         return <Dashboard />;
     }
@@ -69,7 +105,11 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
+      <Sidebar
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        onLogout={handleLogout}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header user={user} onLogout={handleLogout} />
         <main className="flex-1 overflow-auto">{renderPage()}</main>

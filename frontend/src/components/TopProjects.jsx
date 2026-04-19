@@ -1,13 +1,17 @@
 import { Award } from "lucide-react";
 
 export default function TopProjects({ data }) {
-  if (!data?.projects || data.projects.length === 0) {
+  // data = axios response: {success, data: {data: [...ProjectStatsOut], meta: {}}}
+  const projects = data?.data?.data || [];
+  if (projects.length === 0) {
     return (
       <div className="card-lg">
         <p className="text-gray-600">No project data available</p>
       </div>
     );
   }
+
+  const maxProfit = Math.max(...projects.map((p) => p.profit || 0)) || 1;
 
   return (
     <div className="card-lg">
@@ -17,31 +21,28 @@ export default function TopProjects({ data }) {
       </div>
 
       <div className="space-y-4">
-        {data.projects.slice(0, 5).map((project, idx) => (
+        {projects.slice(0, 5).map((project, idx) => (
           <div
             key={idx}
             className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition"
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-gray-900 text-sm">
-                {idx + 1}. {project.name}
+                {idx + 1}. {project.project_name}
               </h3>
-              <span className="text-xs font-medium px-2 py-1 bg-primary-100 text-primary-700 rounded">
-                {project.status}
-              </span>
             </div>
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Revenue</span>
+                <span className="text-gray-600">Income</span>
                 <span className="font-medium text-green-600">
-                  ${(project.revenue || 0).toFixed(2)}
+                  ${(project.income || 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Expenses</span>
                 <span className="font-medium text-orange-600">
-                  ${(project.expenses || 0).toFixed(2)}
+                  ${(project.expense || 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-gray-200">
@@ -64,13 +65,7 @@ export default function TopProjects({ data }) {
                 <div
                   className="bg-primary-600 h-2 rounded-full transition-all"
                   style={{
-                    width: `${Math.min(
-                      100,
-                      ((project.profit || 0) /
-                        (Math.max(...data.projects.map((p) => p.profit || 0)) ||
-                          1)) *
-                        100,
-                    )}%`,
+                    width: `${Math.min(100, ((project.profit || 0) / maxProfit) * 100)}%`,
                   }}
                 />
               </div>

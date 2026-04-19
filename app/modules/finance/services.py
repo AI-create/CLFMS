@@ -21,6 +21,23 @@ def create_expense(db: Session, payload: CreateExpense) -> Expense:
     return expense
 
 
+def list_expenses(
+    db: Session,
+    project_id: int | None = None,
+    category: str | None = None,
+    page: int = 1,
+    limit: int = 20,
+):
+    query = db.query(Expense)
+    if project_id:
+        query = query.filter(Expense.project_id == project_id)
+    if category:
+        query = query.filter(Expense.category == category)
+    total = query.count()
+    expenses = query.order_by(Expense.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+    return expenses, total
+
+
 def get_project_financial_summary(db: Session, *, project_id: int) -> dict[str, float]:
     # Revenue = cash received from payments for invoices under this project.
     revenue_stmt = (

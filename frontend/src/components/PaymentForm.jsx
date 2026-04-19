@@ -9,11 +9,9 @@ export default function PaymentForm({ payment, onClose, onSubmit }) {
     payment || {
       invoice_id: "",
       amount: "",
-      payment_method: "bank_transfer",
+      method: "bank_transfer",
       payment_date: new Date().toISOString().split("T")[0],
-      transaction_reference: "",
-      status: "completed",
-      notes: "",
+      reference: "",
     },
   );
   const [invoices, setInvoices] = useState([]);
@@ -27,7 +25,7 @@ export default function PaymentForm({ payment, onClose, onSubmit }) {
   const fetchInvoices = async () => {
     try {
       const response = await axios.get(`${API_URL}/invoices`);
-      setInvoices(response.data.data || response.data);
+      setInvoices(response.data.data?.data || []);
     } catch (err) {
       console.error("Error fetching invoices:", err);
     }
@@ -62,7 +60,7 @@ export default function PaymentForm({ payment, onClose, onSubmit }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
           <h2 className="text-xl font-bold text-gray-900">
@@ -130,8 +128,8 @@ export default function PaymentForm({ payment, onClose, onSubmit }) {
                 Payment Method
               </label>
               <select
-                name="payment_method"
-                value={formData.payment_method}
+                name="method"
+                value={formData.method}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
               >
@@ -157,52 +155,20 @@ export default function PaymentForm({ payment, onClose, onSubmit }) {
               />
             </div>
 
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-              >
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-              </select>
-            </div>
-
-            {/* Transaction Reference */}
+            {/* Reference */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Transaction Reference
               </label>
               <input
                 type="text"
-                name="transaction_reference"
-                value={formData.transaction_reference}
+                name="reference"
+                value={formData.reference}
                 onChange={handleChange}
                 placeholder="Reference number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
               />
             </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              placeholder="Add any notes about this payment..."
-              rows="3"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-            />
           </div>
 
           {/* Actions */}

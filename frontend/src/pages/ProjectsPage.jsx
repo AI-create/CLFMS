@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Plus, Edit, Trash2, AlertCircle, Loader, Search } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  AlertCircle,
+  Loader,
+  Search,
+  TrendingUp,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import ProjectForm from "../components/ProjectForm";
 
 const API_URL = "/api/v1";
@@ -13,6 +23,8 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [expandedFinance, setExpandedFinance] = useState(null);
+  const [financeSummary, setFinanceSummary] = useState({});
 
   useEffect(() => {
     fetchProjects();
@@ -22,7 +34,7 @@ export default function ProjectsPage() {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/projects`);
-      setProjects(response.data.data || response.data);
+      setProjects(response.data.data?.data || []);
       setError(null);
     } catch (err) {
       console.error("Error fetching projects:", err);
@@ -41,6 +53,27 @@ export default function ProjectsPage() {
       setProjects(projects.filter((p) => p.id !== projectId));
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to delete project");
+    }
+  };
+
+  const handleToggleFinance = async (projectId) => {
+    if (expandedFinance === projectId) {
+      setExpandedFinance(null);
+    } else {
+      setExpandedFinance(projectId);
+      if (!financeSummary[projectId]) {
+        try {
+          const res = await axios.get(
+            `${API_URL}/finance/project/${projectId}`,
+          );
+          setFinanceSummary((prev) => ({
+            ...prev,
+            [projectId]: res.data.data,
+          }));
+        } catch (err) {
+          setFinanceSummary((prev) => ({ ...prev, [projectId]: null }));
+        }
+      }
     }
   };
 
@@ -186,6 +219,18 @@ export default function ProjectsPage() {
 
                 <div className="flex gap-2 pt-4 border-t border-gray-200">
                   <button
+                    onClick={() => handleToggleFinance(project.id)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded transition"
+                  >
+                    <TrendingUp size={16} />
+                    Finances
+                    {expandedFinance === project.id ? (
+                      <ChevronUp size={14} />
+                    ) : (
+                      <ChevronDown size={14} />
+                    )}
+                  </button>
+                  <button
                     onClick={() => {
                       setEditingProject(project);
                       setShowForm(true);
@@ -203,6 +248,56 @@ export default function ProjectsPage() {
                     Delete
                   </button>
                 </div>
+                {expandedFinance === project.id && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    {financeSummary[project.id] === undefined ? (
+                      <Loader
+                        className="animate-spin text-primary-600 mx-auto"
+                        size={18}
+                      />
+                    ) : financeSummary[project.id] === null ? (
+                      <p className="text-xs text-gray-400 text-center">
+                        No financial data available
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="bg-green-50 rounded p-2">
+                          <p className="text-xs text-gray-500">Revenue</p>
+                          <p className="font-semibold text-green-700">
+                            $
+                            {(financeSummary[project.id].revenue || 0).toFixed(
+                              2,
+                            )}
+                          </p>
+                        </div>
+                        <div className="bg-red-50 rounded p-2">
+                          <p className="text-xs text-gray-500">Cost</p>
+                          <p className="font-semibold text-red-700">
+                            ${(financeSummary[project.id].cost || 0).toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="bg-blue-50 rounded p-2">
+                          <p className="text-xs text-gray-500">Profit</p>
+                          <p className="font-semibold text-blue-700">
+                            $
+                            {(financeSummary[project.id].profit || 0).toFixed(
+                              2,
+                            )}
+                          </p>
+                        </div>
+                        <div className="bg-purple-50 rounded p-2">
+                          <p className="text-xs text-gray-500">Margin</p>
+                          <p className="font-semibold text-purple-700">
+                            {(financeSummary[project.id].margin || 0).toFixed(
+                              1,
+                            )}
+                            %
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}

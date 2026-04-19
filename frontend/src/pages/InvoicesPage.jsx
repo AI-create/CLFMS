@@ -3,11 +3,11 @@ import axios from "axios";
 import {
   Plus,
   Eye,
-  Trash2,
+  Send,
+  CheckCircle,
   AlertCircle,
   Loader,
   Search,
-  Download,
 } from "lucide-react";
 import InvoiceForm from "../components/InvoiceForm";
 
@@ -30,7 +30,7 @@ export default function InvoicesPage() {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/invoices`);
-      setInvoices(response.data.data || response.data);
+      setInvoices(response.data.data?.data || []);
       setError(null);
     } catch (err) {
       console.error("Error fetching invoices:", err);
@@ -40,15 +40,21 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleDelete = async (invoiceId) => {
-    if (!window.confirm("Are you sure you want to delete this invoice?"))
-      return;
-
+  const handleSend = async (invoiceId) => {
     try {
-      await axios.delete(`${API_URL}/invoices/${invoiceId}`);
-      setInvoices(invoices.filter((i) => i.id !== invoiceId));
+      await axios.post(`${API_URL}/invoices/${invoiceId}/send`);
+      await fetchInvoices();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete invoice");
+      setError(err.response?.data?.detail || "Failed to send invoice");
+    }
+  };
+
+  const handleMarkPaid = async (invoiceId) => {
+    try {
+      await axios.post(`${API_URL}/invoices/${invoiceId}/mark-paid`);
+      await fetchInvoices();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to mark invoice as paid");
     }
   };
 
@@ -166,7 +172,7 @@ export default function InvoicesPage() {
           <Loader className="animate-spin text-primary-600" size={32} />
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -230,17 +236,24 @@ export default function InvoicesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
-                      <button className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition">
-                        <Eye size={16} />
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleDelete(invoice.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition"
-                      >
-                        <Trash2 size={16} />
-                        Delete
-                      </button>
+                      {invoice.status === "draft" && (
+                        <button
+                          onClick={() => handleSend(invoice.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition"
+                        >
+                          <Send size={16} />
+                          Send
+                        </button>
+                      )}
+                      {invoice.status !== "paid" && (
+                        <button
+                          onClick={() => handleMarkPaid(invoice.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded transition"
+                        >
+                          <CheckCircle size={16} />
+                          Mark Paid
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -252,11 +265,7 @@ export default function InvoicesPage() {
 
       {/* Form Modal */}
       {showForm && (
-        <InvoiceForm
-          invoice={editingInvoice}
-          onClose={handleFormClose}
-          onSubmit={handleFormSubmit}
-        />
+        <InvoiceForm onClose={handleFormClose} onSubmit={handleFormSubmit} />
       )}
     </div>
   );

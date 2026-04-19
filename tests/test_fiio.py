@@ -77,8 +77,8 @@ def test_data(test_client):
     client_res = test_client.post(
         "/api/v1/clients",
         json={
-            "name": "Test Client",
-            "email": "client@company.com",
+            "company_name": "Test Client",
+            "contact_email": "client@company.com",
         },
         headers=headers,
     )
@@ -191,8 +191,8 @@ def test_create_project_income(test_client):
     client_res = test_client.post(
         "/api/v1/clients",
         json={
-            "name": "Test Client",
-            "email": "client@company.com",
+            "company_name": "Test Client",
+            "contact_email": "client@company.com",
         },
         headers=headers,
     )
@@ -272,8 +272,8 @@ def test_create_project_expense(test_client):
     client_res = test_client.post(
         "/api/v1/clients",
         json={
-            "name": "Test Client",
-            "email": "client@company.com",
+            "company_name": "Test Client",
+            "contact_email": "client@company.com",
         },
         headers=headers,
     )
@@ -413,8 +413,8 @@ def test_get_project_profit(test_client):
     client_res = test_client.post(
         "/api/v1/clients",
         json={
-            "name": "Test Client",
-            "email": "client@company.com",
+            "company_name": "Test Client",
+            "contact_email": "client@company.com",
         },
         headers=headers,
     )

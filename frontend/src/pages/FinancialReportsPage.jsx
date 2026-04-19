@@ -55,11 +55,39 @@ export default function FinancialReportsPage() {
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   const handleExportPDF = () => {
-    alert("PDF export coming soon!");
+    window.print();
   };
 
   const handleExportCSV = () => {
-    alert("CSV export coming soon!");
+    const summary = financialSummary?.data;
+    const trendData = profitTrend?.data?.data || [];
+    const projectData = topProjects?.data?.data || [];
+
+    let csv = "Financial Summary\n";
+    if (summary) {
+      csv += `Total Income,${summary.total_income}\n`;
+      csv += `Total Expense,${summary.total_expense}\n`;
+      csv += `Net Profit,${summary.total_profit}\n`;
+      csv += `Profit Margin,${summary.profit_margin}%\n\n`;
+    }
+
+    csv += "30-Day Profit Trend\nDate,Income,Expense,Profit\n";
+    trendData.forEach((d) => {
+      csv += `${d.date},${d.income},${d.expense},${d.profit}\n`;
+    });
+
+    csv += "\nTop Projects\nProject,Income,Expense,Profit,Margin\n";
+    projectData.forEach((p) => {
+      csv += `${p.project_name},${p.income},${p.expense},${p.profit},${p.margin}%\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `financial-report-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -99,39 +127,30 @@ export default function FinancialReportsPage() {
       ) : (
         <>
           {/* Summary Metrics */}
-          {financialSummary && (
+          {financialSummary?.data && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <div className="card-lg">
                 <p className="metric-label">Total Income</p>
                 <p className="metric-value text-2xl text-green-600">
-                  ${(financialSummary.total_income || 0).toFixed(2)}
+                  ${(financialSummary.data.total_income || 0).toFixed(2)}
                 </p>
               </div>
               <div className="card-lg">
                 <p className="metric-label">Total Expenses</p>
                 <p className="metric-value text-2xl text-orange-600">
-                  ${(financialSummary.total_expenses || 0).toFixed(2)}
+                  ${(financialSummary.data.total_expense || 0).toFixed(2)}
                 </p>
               </div>
               <div className="card-lg">
                 <p className="metric-label">Net Profit</p>
                 <p className="metric-value text-2xl text-blue-600">
-                  $
-                  {(
-                    (financialSummary.total_income || 0) -
-                    (financialSummary.total_expenses || 0)
-                  ).toFixed(2)}
+                  ${(financialSummary.data.total_profit || 0).toFixed(2)}
                 </p>
               </div>
               <div className="card-lg">
                 <p className="metric-label">Profit Margin</p>
                 <p className="metric-value text-2xl text-primary-600">
-                  {(
-                    ((financialSummary.total_income || 0) -
-                      (financialSummary.total_expenses || 0)) /
-                    (financialSummary.total_income || 1)
-                  ).toFixed(1)}
-                  %
+                  {(financialSummary.data.profit_margin || 0).toFixed(1)}%
                 </p>
               </div>
             </div>
@@ -139,31 +158,48 @@ export default function FinancialReportsPage() {
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Income vs Expenses Chart */}
-            {financialSummary && (
+            {/* Income vs Expenses Breakdown Chart */}
+            {financialSummary?.data && (
               <div className="card-lg">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Income vs Expenses (7 Days)
+                  Income vs Expenses by Category
                 </h2>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={
-                        financialSummary.daily_breakdown
-                          ?.slice(-7)
-                          .map((day) => ({
-                            date: new Date(day.date).toLocaleDateString(
-                              "en-US",
-                              { month: "short", day: "numeric" },
-                            ),
-                            income: day.income || 0,
-                            expenses: day.expenses || 0,
-                          })) || []
-                      }
+                      data={[
+                        {
+                          category: "Legacy",
+                          income:
+                            financialSummary.data.income_breakdown
+                              ?.legacy_payments || 0,
+                          expense:
+                            financialSummary.data.expense_breakdown
+                              ?.legacy_expenses || 0,
+                        },
+                        {
+                          category: "Hourly",
+                          income:
+                            financialSummary.data.income_breakdown
+                              ?.hourly_income || 0,
+                          expense:
+                            financialSummary.data.expense_breakdown
+                              ?.hourly_expenses || 0,
+                        },
+                        {
+                          category: "Project",
+                          income:
+                            financialSummary.data.income_breakdown
+                              ?.project_income || 0,
+                          expense:
+                            financialSummary.data.expense_breakdown
+                              ?.project_expenses || 0,
+                        },
+                      ]}
                       margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="date" stroke="#6b7280" />
+                      <XAxis dataKey="category" stroke="#6b7280" />
                       <YAxis stroke="#6b7280" />
                       <Tooltip
                         contentStyle={{
@@ -180,7 +216,7 @@ export default function FinancialReportsPage() {
                         radius={[8, 8, 0, 0]}
                       />
                       <Bar
-                        dataKey="expenses"
+                        dataKey="expense"
                         fill="#f59e0b"
                         radius={[8, 8, 0, 0]}
                       />
@@ -199,15 +235,15 @@ export default function FinancialReportsPage() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={
-                        profitTrend.trends?.slice(-30).map((day) => ({
+                      data={(profitTrend.data?.data || [])
+                        .slice(-30)
+                        .map((day) => ({
                           date: new Date(day.date).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                           }),
                           profit: day.profit || 0,
-                        })) || []
-                      }
+                        }))}
                       margin={{ top: 5, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -248,11 +284,11 @@ export default function FinancialReportsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={topProjects.projects
-                            ?.slice(0, 5)
-                            .map((p, i) => ({
-                              name: p.name,
-                              value: p.revenue || 0,
+                          data={(topProjects.data?.data || [])
+                            .slice(0, 5)
+                            .map((p) => ({
+                              name: p.project_name,
+                              value: p.income || 0,
                             }))}
                           cx="50%"
                           cy="50%"
@@ -264,9 +300,14 @@ export default function FinancialReportsPage() {
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {topProjects.projects?.slice(0, 5).map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                          ))}
+                          {(topProjects.data?.data || [])
+                            .slice(0, 5)
+                            .map((_, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index]}
+                              />
+                            ))}
                         </Pie>
                         <Tooltip
                           formatter={(value) => `$${value.toFixed(2)}`}
@@ -278,30 +319,32 @@ export default function FinancialReportsPage() {
 
                 {/* Project Details */}
                 <div className="space-y-4">
-                  {topProjects.projects?.slice(0, 5).map((project, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: COLORS[idx] }}
-                        />
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {project.name}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Profit: ${(project.profit || 0).toFixed(2)}
-                          </p>
+                  {(topProjects.data?.data || [])
+                    .slice(0, 5)
+                    .map((project, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: COLORS[idx] }}
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {project.project_name}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Profit: ${(project.profit || 0).toFixed(2)}
+                            </p>
+                          </div>
                         </div>
+                        <p className="font-semibold text-gray-900">
+                          ${(project.income || 0).toFixed(2)}
+                        </p>
                       </div>
-                      <p className="font-semibold text-gray-900">
-                        ${(project.revenue || 0).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>

@@ -7,15 +7,12 @@ const API_URL = "/api/v1";
 export default function ClientForm({ client, onClose, onSubmit }) {
   const [formData, setFormData] = useState(
     client || {
-      name: "",
-      email: "",
-      phone: "",
-      company: "",
-      address: "",
-      city: "",
+      company_name: "",
+      contact_email: "",
+      contact_phone: "",
+      gstin: "",
       state: "",
-      zip_code: "",
-      country: "",
+      address: "",
     },
   );
   const [loading, setLoading] = useState(false);
@@ -79,29 +76,28 @@ export default function ClientForm({ client, onClose, onSubmit }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name *
+                  Company Name *
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="company_name"
+                  value={formData.company_name}
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  placeholder="Client name"
+                  placeholder="Company / Client name"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
+                  Contact Email
                 </label>
                 <input
                   type="email"
-                  name="email"
-                  value={formData.email}
+                  name="contact_email"
+                  value={formData.contact_email}
                   onChange={handleChange}
-                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
                   placeholder="email@example.com"
                 />
@@ -109,29 +105,29 @@ export default function ClientForm({ client, onClose, onSubmit }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
+                  Contact Phone
                 </label>
                 <input
                   type="tel"
-                  name="phone"
-                  value={formData.phone}
+                  name="contact_phone"
+                  value={formData.contact_phone}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="+91 99999 99999"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Company
+                  GSTIN
                 </label>
                 <input
                   type="text"
-                  name="company"
-                  value={formData.company}
+                  name="gstin"
+                  value={formData.gstin}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  placeholder="Company name"
+                  placeholder="GST Identification Number"
                 />
               </div>
             </div>
@@ -143,7 +139,7 @@ export default function ClientForm({ client, onClose, onSubmit }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Street Address
+                Address
               </label>
               <input
                 type="text"
@@ -155,62 +151,18 @@ export default function ClientForm({ client, onClose, onSubmit }) {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  placeholder="City"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State
-                </label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  placeholder="State"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ZIP Code
-                </label>
-                <input
-                  type="text"
-                  name="zip_code"
-                  value={formData.zip_code}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  placeholder="ZIP code"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Country
-                </label>
-                <input
-                  type="text"
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  placeholder="Country"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                State
+              </label>
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
+                placeholder="State"
+              />
             </div>
           </div>
 

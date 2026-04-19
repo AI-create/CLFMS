@@ -29,7 +29,7 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
   const fetchClients = async () => {
     try {
       const response = await axios.get(`${API_URL}/clients`);
-      setClients(response.data.data || response.data);
+      setClients(response.data.data?.data || []);
     } catch (err) {
       console.error("Error fetching clients:", err);
     } finally {
@@ -140,7 +140,7 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
                   <option value="">Select a client</option>
                   {clients.map((client) => (
                     <option key={client.id} value={client.id}>
-                      {client.name}
+                      {client.company_name}
                     </option>
                   ))}
                 </select>
