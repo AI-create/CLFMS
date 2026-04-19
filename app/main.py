@@ -1,7 +1,10 @@
 from contextlib import asynccontextmanager
+import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
@@ -100,3 +103,8 @@ app.include_router(activity_logs_router, prefix=API_PREFIX)
 app.include_router(research_router, prefix=API_PREFIX)
 app.include_router(operations_router, prefix=API_PREFIX)
 app.include_router(fiio_router, prefix=API_PREFIX)
+
+# Serve frontend static files
+frontend_static_path = Path(__file__).parent / "static" / "frontend"
+if frontend_static_path.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_static_path), html=True), name="frontend")
