@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+      .row { display: flex; justify-content: space-between; gap: 16px; }
+      .card { border: 1px solid #ddd; padding: 12px; border-radius: 8px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+      th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+      th { background: #f7f7f7; }
+      .right { text-align: right; }
+      .muted { color: #666; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div>
+        <h2>Invoice</h2>
+        <div class="muted">Invoice No: <strong>{{ invoice.invoice_number }}</strong></div>
+        <div class="muted">Issued: {{ invoice.issued_date }}</div>
+        <div class="muted">Due: {{ invoice.due_date }}</div>
+        <div class="muted">Status: {{ invoice.status }}</div>
+      </div>
+      <div class="card">
+        <div><strong>Client</strong></div>
+        <div>{{ client.company_name if client else "-" }}</div>
+        <div class="muted">GSTIN: {{ client.gstin if client and client.gstin else "-" }}</div>
+        <div class="muted">State: {{ client.state if client and client.state else "-" }}</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <div><strong>Project</strong></div>
+      <div>{{ project.name if project else "-" }}</div>
+      <div class="muted">Project ID: {{ invoice.project_id }}</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th class="right">Qty</th>
+          <th class="right">Rate</th>
+          <th class="right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.description }}</td>
+          <td class="right">{{ "%.2f"|format(item.quantity) }}</td>
+          <td class="right">{{ "%.2f"|format(item.rate) }}</td>
+          <td class="right">{{ "%.2f"|format(item.amount) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="row" style="margin-top: 16px;">
+      <div></div>
+      <div style="min-width: 320px;">
+        <div class="row"><div>Subtotal</div><div class="right">{{ "%.2f"|format(invoice.subtotal) }}</div></div>
+        <div class="row"><div>CGST</div><div class="right">{{ "%.2f"|format(invoice.cgst) }}</div></div>
+        <div class="row"><div>SGST</div><div class="right">{{ "%.2f"|format(invoice.sgst) }}</div></div>
+        <div class="row"><div>IGST</div><div class="right">{{ "%.2f"|format(invoice.igst) }}</div></div>
+        <hr />
+        <div class="row"><div><strong>Total</strong></div><div class="right"><strong>{{ "%.2f"|format(invoice.total) }}</strong></div></div>
+      </div>
+    </div>
+  </body>
+</html>
+
