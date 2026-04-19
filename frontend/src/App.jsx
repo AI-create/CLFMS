@@ -3,6 +3,9 @@ import axios from "axios";
 import Dashboard from "./pages/Dashboard";
 import ClientsPage from "./pages/ClientsPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import InvoicesPage from "./pages/InvoicesPage";
+import PaymentsPage from "./pages/PaymentsPage";
+import FinancialReportsPage from "./pages/FinancialReportsPage";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import "./index.css";
@@ -34,6 +37,12 @@ export default function App() {
         return <ClientsPage />;
       case "projects":
         return <ProjectsPage />;
+      case "invoices":
+        return <InvoicesPage />;
+      case "payments":
+        return <PaymentsPage />;
+      case "financial-reports":
+        return <FinancialReportsPage />;
       default:
         return <Dashboard />;
     }

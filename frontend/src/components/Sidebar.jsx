@@ -1,10 +1,20 @@
-import { Home, Users, FolderOpen, LogOut } from "lucide-react";
+import {
+  Home,
+  Users,
+  FolderOpen,
+  Receipt,
+  TrendingUp,
+  LogOut,
+} from "lucide-react";
 
 export default function Sidebar({ currentPage, setCurrentPage }) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "clients", label: "Clients", icon: Users },
     { id: "projects", label: "Projects", icon: FolderOpen },
+    { id: "invoices", label: "Invoices", icon: Receipt },
+    { id: "payments", label: "Payments", icon: TrendingUp },
+    { id: "financial-reports", label: "Financial Reports", icon: TrendingUp },
   ];
 
   return (
