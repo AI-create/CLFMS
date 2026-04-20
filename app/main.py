@@ -111,9 +111,9 @@ app.include_router(fiio_router, prefix=API_PREFIX)
 # Serve frontend static files (must be mounted after all routes)
 frontend_static_path = Path(__file__).parent / "static" / "frontend"
 if frontend_static_path.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_static_path), html=True), name="frontend")
+    app.mount("/businesstools", StaticFiles(directory=str(frontend_static_path), html=True), name="frontend")
 else:
     # Fallback if frontend files don't exist
-    @app.get("/")
+    @app.get("/businesstools")
     def health():
         return {"success": True, "message": "CLFMS API is running"}
