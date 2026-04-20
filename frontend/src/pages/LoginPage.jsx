@@ -35,8 +35,10 @@ export default function LoginPage({ onLoginSuccess, onShowSignup }) {
       onLoginSuccess(token, user);
     } catch (err) {
       const code = err?.response?.data?.error?.code;
-      if (code === "PENDING_APPROVAL") {
-        setError("Your account is pending admin approval. You'll be notified once approved.");
+      if (code === "EMAIL_NOT_VERIFIED") {
+        setError(
+          "Your email is not verified. Please check your inbox for the verification code.",
+        );
       } else {
         setError(
           apiError(

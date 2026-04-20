@@ -1,4 +1,7 @@
+import logging
+import random
 import secrets
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -7,6 +10,14 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.core.config import settings
 from app.modules.auth.models import User
+
+logger = logging.getLogger("clfms")
+
+OTP_EXPIRY_MINUTES = 10
+
+
+def _generate_otp() -> str:
+    return f"{random.SystemRandom().randint(0, 999999):06d}"
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
@@ -31,8 +42,8 @@ def authenticate_user(db: Session, *, email: str, password: str) -> User:
     if not verify_password(password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    if not user.is_approved:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account pending admin approval")
+    if not user.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified. Please check your inbox for the OTP.")
 
     return user
 
@@ -48,7 +59,7 @@ def create_user(db: Session, *, email: str, password: str, role: str = "admin", 
         role=role,
         full_name=full_name,
         is_active=True,
-        is_approved=True,  # Admin-created accounts are pre-approved
+        is_verified=True,  # Admin-created accounts skip OTP
     )
     db.add(user)
     db.commit()
@@ -57,34 +68,79 @@ def create_user(db: Session, *, email: str, password: str, role: str = "admin", 
 
 
 def signup_user(db: Session, *, email: str, password: str, role: str = "researcher", full_name: str | None = None) -> User:
-    """Public registration — creates account pending admin approval."""
+    """Public registration — creates unverified account and emails an OTP."""
     existing = get_user_by_email(db, email.lower().strip())
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
-    token = secrets.token_urlsafe(32)
+    otp = _generate_otp()
     user = User(
         email=email.lower().strip(),
         password_hash=get_password_hash(password),
         role=role,
         full_name=full_name,
         is_active=True,
-        is_approved=False,
-        approval_token=token,
+        is_verified=False,
+        otp_code=otp,
+        otp_expires_at=datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES),
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    # Send approval email to admin (non-blocking — failure is logged, not raised)
-    try:
-        from app.services.email_service import send_approval_request_email
-        send_approval_request_email(user.email, user.full_name or "", token)
-    except Exception as exc:  # noqa: BLE001
-        import logging
-        logging.getLogger("clfms").error("Approval email failed: %s", exc)
-
+    _send_otp_email(user.email, user.full_name or "", otp)
     return user
+
+
+def verify_otp(db: Session, *, email: str, otp: str) -> User:
+    """Verify OTP — marks user as verified and clears the OTP."""
+    user = get_user_by_email(db, email.lower().strip())
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+
+    if user.is_verified:
+        return user  # Already verified — idempotent
+
+    if not user.otp_code or user.otp_code != otp.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP")
+
+    if user.otp_expires_at and datetime.now(timezone.utc) > user.otp_expires_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP has expired. Please request a new one.")
+
+    user.is_verified = True
+    user.otp_code = None
+    user.otp_expires_at = None
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def resend_otp(db: Session, *, email: str) -> None:
+    """Generate a fresh OTP and resend it."""
+    user = get_user_by_email(db, email.lower().strip())
+    if not user:
+        # Don't reveal whether the email exists
+        return
+
+    if user.is_verified:
+        return  # Already verified — nothing to do
+
+    otp = _generate_otp()
+    user.otp_code = otp
+    user.otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES)
+    db.add(user)
+    db.commit()
+
+    _send_otp_email(user.email, user.full_name or "", otp)
+
+
+def _send_otp_email(email: str, name: str, otp: str) -> None:
+    try:
+        from app.services.email_service import send_otp_email
+        send_otp_email(email, name, otp)
+    except Exception as exc:
+        logger.error("OTP email failed for %s: %s", email, exc)
 
 
 def update_profile(db: Session, *, user: User, full_name: str | None, email: str | None,
@@ -139,32 +195,19 @@ def delete_user(db: Session, *, user_id: int, requester_id: int) -> None:
     db.commit()
 
 
-def approve_user_by_token(db: Session, token: str) -> User:
-    """Approve a user account via the one-time approval token."""
-    stmt = select(User).where(User.approval_token == token)
-    user = db.execute(stmt).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid or expired approval link")
-    if user.is_approved:
-        return user  # already approved — idempotent
-    user.is_approved = True
-    user.approval_token = None  # consume the token
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-def login_and_issue_token(db: Session, *, email: str, password: str) -> tuple[str, User]:
-    user = authenticate_user(db, email=email, password=password)
+def login_and_issue_token(db: Session, *, email: str, password: str | None) -> tuple[str, User]:
+    """Issue a JWT. If password is None (OTP-verified path), skip password check."""
+    if password is None:
+        user = get_user_by_email(db, email)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    else:
+        user = authenticate_user(db, email=email, password=password)
     token = create_access_token(subject=user.email, role=user.role)
     return token, user
 
 
 def ensure_default_admin(db: Session) -> None:
-    # Create a default admin account to make local development usable.
-    # If the user already exists but has a non-bcrypt hash (e.g. legacy sha256_crypt),
-    # re-hash their password so logins continue to work after the bcrypt migration.
     existing = get_user_by_email(db, settings.default_admin_email)
     if existing:
         if not existing.password_hash.startswith(("$2b$", "$2a$")):

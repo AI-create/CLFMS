@@ -31,13 +31,12 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = []
 
-    # SMTP email settings (for approval emails)
+    # SMTP email settings (for OTP verification emails)
     smtp_host: str = os.getenv("SMTP_HOST", "smtp.hostinger.com")
     smtp_port: int = int(os.getenv("SMTP_PORT", "465"))
     smtp_user: str = os.getenv("SMTP_USER", "")
     smtp_password: str = os.getenv("SMTP_PASSWORD", "")
     smtp_from: str = os.getenv("SMTP_FROM", "admin@magnetarai.online")
-    admin_approval_email: str = os.getenv("ADMIN_APPROVAL_EMAIL", "admin@magnetarai.online")
     app_base_url: str = os.getenv("APP_BASE_URL", "https://magnetarai.online")
 
     def __init__(self, **values):

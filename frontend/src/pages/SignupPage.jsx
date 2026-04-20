@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { UserPlus, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Eye, EyeOff, Mail, ShieldCheck } from "lucide-react";
 
-export default function SignupPage({ onShowLogin }) {
+export default function SignupPage({ onShowLogin, onLoginSuccess }) {
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -12,8 +12,15 @@ export default function SignupPage({ onShowLogin }) {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
+
+  // OTP step
+  const [step, setStep] = useState("signup"); // "signup" | "otp"
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [resendMsg, setResendMsg] = useState("");
 
   function validate() {
     const e = {};
@@ -49,7 +56,8 @@ export default function SignupPage({ onShowLogin }) {
       });
       const data = await res.json();
       if (res.ok && data.success !== false) {
-        setSuccess(true);
+        setOtpEmail(form.email);
+        setStep("otp");
       } else {
         setServerError(data.error?.message || data.detail || "Signup failed");
       }
@@ -60,33 +68,113 @@ export default function SignupPage({ onShowLogin }) {
     }
   }
 
-  if (success) {
+  async function handleVerifyOtp(ev) {
+    ev.preventDefault();
+    if (!otp || otp.length !== 6) {
+      setOtpError("Please enter the 6-digit code.");
+      return;
+    }
+    setOtpError("");
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/v1/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail, otp }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success !== false) {
+        if (onLoginSuccess && data.data?.token) {
+          onLoginSuccess(data.data.token, data.data.user);
+        } else {
+          onShowLogin();
+        }
+      } else {
+        setOtpError(data.error?.message || data.detail || "Invalid or expired code.");
+      }
+    } catch {
+      setOtpError("Network error. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    setResendMsg("");
+    setOtpError("");
+    try {
+      await fetch("/api/v1/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail }),
+      });
+      setResendMsg("A new code has been sent to your email.");
+    } catch {
+      setOtpError("Failed to resend. Please try again.");
+    }
+  }
+
+  // ── OTP Step ─────────────────────────────────────────────────────────────
+  if (step === "otp") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 w-full max-w-md text-center">
-          <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserPlus className="w-8 h-8 text-yellow-400" />
+          <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-8 h-8 text-blue-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Request Submitted!
-          </h2>
-          <p className="text-slate-400 mb-2">
-            Your account has been created and is <span className="text-yellow-400 font-medium">pending admin approval</span>.
+          <h2 className="text-2xl font-bold text-white mb-2">Check your email</h2>
+          <p className="text-slate-400 text-sm mb-1">
+            We sent a 6-digit code to
           </p>
-          <p className="text-slate-500 text-sm mb-6">
-            The admin will review your request and send an approval. You'll be able to log in once approved.
+          <p className="text-blue-400 font-medium mb-6">{otpEmail}</p>
+
+          {otpError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 text-red-400 text-sm">
+              {otpError}
+            </div>
+          )}
+          {resendMsg && (
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-4 text-green-400 text-sm">
+              {resendMsg}
+            </div>
+          )}
+
+          <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="000000"
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white text-center text-2xl font-bold tracking-widest placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={otpLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              {otpLoading ? "Verifying..." : "Verify Email"}
+            </button>
+          </form>
+
+          <p className="text-slate-500 text-sm mt-6">
+            Didn't receive a code?{" "}
+            <button
+              onClick={handleResend}
+              className="text-blue-400 hover:text-blue-300 font-medium"
+            >
+              Resend
+            </button>
           </p>
-          <button
-            onClick={onShowLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-          >
-            Back to Sign In
-          </button>
+          <p className="text-slate-600 text-xs mt-2">Code expires in 10 minutes</p>
         </div>
       </div>
     );
   }
 
+  // ── Signup Form ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 w-full max-w-md">
@@ -224,3 +312,5 @@ export default function SignupPage({ onShowLogin }) {
     </div>
   );
 }
+
+

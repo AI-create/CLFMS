@@ -135,7 +135,12 @@ export default function App() {
 
   if (!token) {
     if (showSignup) {
-      return <SignupPage onShowLogin={() => setShowSignup(false)} />;
+      return (
+        <SignupPage
+          onShowLogin={() => setShowSignup(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      );
     }
     return (
       <LoginPage

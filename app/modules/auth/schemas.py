@@ -118,7 +118,7 @@ class UserOut(BaseModel):
     role: str
     full_name: Optional[str] = None
     is_active: bool = True
-    is_approved: bool = False
+    is_verified: bool = False
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
@@ -128,3 +128,29 @@ class LoginResponse(BaseModel):
     token: str
     user: UserOut
 
+
+class OtpVerifyRequest(BaseModel):
+    email: str
+    otp: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return v.lower().strip()
+
+    @field_validator("otp")
+    @classmethod
+    def validate_otp(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("OTP must be a 6-digit number")
+        return v
+
+
+class ResendOtpRequest(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return v.lower().strip()

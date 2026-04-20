@@ -12,8 +12,10 @@ class User(Base):
     role = Column(String, nullable=False, default="admin")
     full_name = Column(String, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
-    is_approved = Column(Boolean, nullable=False, default=False)
-    approval_token = Column(String, unique=True, nullable=True)
+    is_verified = Column(Boolean, nullable=False, default=False)
+    otp_code = Column(String, nullable=True)
+    otp_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
 
 
