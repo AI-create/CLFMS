@@ -34,7 +34,6 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./app:/app/app
       - clfms_uploads:/app/uploads
     command: >
       sh -c "alembic upgrade head &&
