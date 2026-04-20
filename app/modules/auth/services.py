@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -29,6 +31,9 @@ def authenticate_user(db: Session, *, email: str, password: str) -> User:
     if not verify_password(password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    if not user.is_approved:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account pending admin approval")
+
     return user
 
 
@@ -43,6 +48,7 @@ def create_user(db: Session, *, email: str, password: str, role: str = "admin", 
         role=role,
         full_name=full_name,
         is_active=True,
+        is_approved=True,  # Admin-created accounts are pre-approved
     )
     db.add(user)
     db.commit()
@@ -51,21 +57,33 @@ def create_user(db: Session, *, email: str, password: str, role: str = "admin", 
 
 
 def signup_user(db: Session, *, email: str, password: str, role: str = "researcher", full_name: str | None = None) -> User:
-    """Public registration — role defaults to researcher; admins assign other roles."""
+    """Public registration — creates account pending admin approval."""
     existing = get_user_by_email(db, email.lower().strip())
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
+    token = secrets.token_urlsafe(32)
     user = User(
         email=email.lower().strip(),
         password_hash=get_password_hash(password),
         role=role,
         full_name=full_name,
         is_active=True,
+        is_approved=False,
+        approval_token=token,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Send approval email to admin (non-blocking — failure is logged, not raised)
+    try:
+        from app.services.email_service import send_approval_request_email
+        send_approval_request_email(user.email, user.full_name or "", token)
+    except Exception as exc:  # noqa: BLE001
+        import logging
+        logging.getLogger("clfms").error("Approval email failed: %s", exc)
+
     return user
 
 
@@ -119,6 +137,22 @@ def delete_user(db: Session, *, user_id: int, requester_id: int) -> None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     db.delete(user)
     db.commit()
+
+
+def approve_user_by_token(db: Session, token: str) -> User:
+    """Approve a user account via the one-time approval token."""
+    stmt = select(User).where(User.approval_token == token)
+    user = db.execute(stmt).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid or expired approval link")
+    if user.is_approved:
+        return user  # already approved — idempotent
+    user.is_approved = True
+    user.approval_token = None  # consume the token
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def login_and_issue_token(db: Session, *, email: str, password: str) -> tuple[str, User]:

@@ -118,6 +118,7 @@ class UserOut(BaseModel):
     role: str
     full_name: Optional[str] = None
     is_active: bool = True
+    is_approved: bool = False
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}

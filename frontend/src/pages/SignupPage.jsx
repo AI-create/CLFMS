@@ -64,20 +64,23 @@ export default function SignupPage({ onShowLogin }) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 w-full max-w-md text-center">
-          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserPlus className="w-8 h-8 text-green-400" />
+          <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserPlus className="w-8 h-8 text-yellow-400" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">
-            Account Created!
+            Request Submitted!
           </h2>
-          <p className="text-slate-400 mb-6">
-            Your account has been successfully created.
+          <p className="text-slate-400 mb-2">
+            Your account has been created and is <span className="text-yellow-400 font-medium">pending admin approval</span>.
+          </p>
+          <p className="text-slate-500 text-sm mb-6">
+            The admin will review your request and send an approval. You'll be able to log in once approved.
           </p>
           <button
             onClick={onShowLogin}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
           >
-            Sign In
+            Back to Sign In
           </button>
         </div>
       </div>

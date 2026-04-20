@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, Depends
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -22,8 +23,11 @@ router = APIRouter()
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     try:
         token, user = auth_services.login_and_issue_token(db, email=payload.email, password=payload.password)
-    except Exception:
-        # Avoid leaking whether email exists.
+    except Exception as exc:
+        detail = str(exc.detail) if hasattr(exc, "detail") else ""
+        if "pending admin approval" in detail:
+            return api_error("PENDING_APPROVAL", "Your account is pending admin approval.", http_status=403)
+        # Generic — avoid leaking whether email exists
         return api_error("INVALID_CREDENTIALS", "Invalid credentials", http_status=401)
 
     return api_success(
@@ -34,7 +38,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/auth/signup")
 def signup(payload: SignupRequest, db: Session = Depends(get_db)):
-    """Public self-registration. Role defaults to researcher."""
+    """Public self-registration. Account requires admin approval before login."""
     try:
         user = auth_services.signup_user(
             db,
@@ -47,8 +51,66 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         detail = str(exc.detail) if hasattr(exc, "detail") else "Signup failed"
         return api_error("SIGNUP_ERROR", detail, http_status=400)
 
-    token, _ = auth_services.login_and_issue_token(db, email=user.email, password=payload.password)
-    return api_success({"token": token, "user": UserOut.model_validate(user)}, message="Account created")
+    return api_success({"user": UserOut.model_validate(user)}, message="Account created — awaiting admin approval")
+
+
+@router.get("/auth/approve/{token}", response_class=HTMLResponse)
+def approve_account(token: str, db: Session = Depends(get_db)):
+    """One-click approval link sent to admin via email."""
+    try:
+        user = auth_services.approve_user_by_token(db, token)
+    except Exception:
+        return HTMLResponse(
+            content=_approval_html(
+                success=False,
+                message="Invalid or expired approval link. The account may have already been approved.",
+            ),
+            status_code=404,
+        )
+    return HTMLResponse(
+        content=_approval_html(
+            success=True,
+            message=f"Account for <strong>{user.email}</strong> has been approved. They can now log in.",
+        ),
+        status_code=200,
+    )
+
+
+def _approval_html(success: bool, message: str) -> str:
+    color = "#22c55e" if success else "#ef4444"
+    icon = "&#10003;" if success else "&#10007;"
+    title = "Account Approved" if success else "Approval Failed"
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} — CLFMS</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+           display: flex; align-items: center; justify-content: center;
+           min-height: 100vh; margin: 0; }}
+    .card {{ background: #1e293b; border-radius: 16px; padding: 48px 40px;
+             text-align: center; max-width: 420px; width: 90%; }}
+    .icon {{ width: 64px; height: 64px; border-radius: 50%;
+             background: {color}22; display: flex; align-items: center;
+             justify-content: center; margin: 0 auto 20px; font-size: 32px;
+             color: {color}; }}
+    h1 {{ color: #fff; margin: 0 0 12px; font-size: 22px; }}
+    p {{ color: #94a3b8; line-height: 1.6; margin: 0 0 28px; }}
+    a {{ display: inline-block; background: #2563eb; color: #fff; padding: 12px 28px;
+         border-radius: 8px; text-decoration: none; font-weight: bold; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">{icon}</div>
+    <h1>{title}</h1>
+    <p>{message}</p>
+    <a href="https://magnetarai.online/businesstools">Go to CLFMS</a>
+  </div>
+</body>
+</html>"""
 
 
 @router.get("/auth/me")

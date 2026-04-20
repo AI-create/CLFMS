@@ -34,12 +34,17 @@ export default function LoginPage({ onLoginSuccess, onShowSignup }) {
       // Call callback
       onLoginSuccess(token, user);
     } catch (err) {
-      setError(
-        apiError(
-          err,
-          err.message || "Failed to login. Please check your credentials.",
-        ),
-      );
+      const code = err?.response?.data?.error?.code;
+      if (code === "PENDING_APPROVAL") {
+        setError("Your account is pending admin approval. You'll be notified once approved.");
+      } else {
+        setError(
+          apiError(
+            err,
+            err.message || "Failed to login. Please check your credentials.",
+          ),
+        );
+      }
     } finally {
       setLoading(false);
     }
