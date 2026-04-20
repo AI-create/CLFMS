@@ -6,8 +6,8 @@ import { AlertCircle, Loader } from "lucide-react";
 const API_URL = "/api/v1";
 
 export default function LoginPage({ onLoginSuccess, onShowSignup }) {
-  const [email, setEmail] = useState("admin@clfms.local");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
