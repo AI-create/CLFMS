@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: clfms_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clfms
+      POSTGRES_USER: clfms_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - clfms_postgres_data:/var/lib/postgresql/data
+    networks:
+      - clfms_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clfms_user -d clfms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: clfms_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://clfms_user:${DB_PASSWORD}@db:5432/clfms
+      SECRET_KEY: ${SECRET_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      COMPANY_STATE: KA
+      DEBUG: "False"
+    ports:
+      - "8080:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+      - clfms_uploads:/app/uploads
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    networks:
+      - clfms_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  clfms_postgres_data:
+  clfms_uploads:
+
+networks:
+  clfms_net:
+    driver: bridge
