@@ -7,6 +7,7 @@ from app.core.security import require_roles
 from app.modules.projects import services
 from app.modules.projects.schemas import CreateProject, ProjectOut
 from app.services.activity_logging_service import log_activity
+from app.services.billing_service import trigger_project_billing
 
 
 router = APIRouter(tags=["Projects"])
@@ -104,3 +105,29 @@ def update_project(
     if not project:
         return api_error("NOT_FOUND", "Project not found", http_status=404)
     return api_success(ProjectOut.model_validate(project))
+
+
+@router.post("/projects/{project_id}/trigger-billing")
+def trigger_billing(
+    project_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    """Manually trigger invoice generation for a project based on its billing_type.
+    Works regardless of auto_billing_enabled or next_billing_date schedule."""
+    try:
+        result = trigger_project_billing(db, project_id)
+    except ValueError as exc:
+        return api_error("BAD_REQUEST", str(exc), http_status=400)
+
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="create",
+        entity_type="invoice",
+        entity_id=result["invoice_id"],
+        entity_name=result["invoice_number"],
+        description=f"Triggered {result['billing_type']} billing for project {project_id} → {result['invoice_number']}",
+    )
+
+    return api_success(result)

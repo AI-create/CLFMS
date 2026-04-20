@@ -118,7 +118,7 @@ class TaskAssignment(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     assigned_to_id = Column(Integer, ForeignKey("employees.id"), nullable=False, index=True)
-    assigned_by_id = Column(Integer, ForeignKey("employees.id"), nullable=False)  # Who assigned
+    assigned_by_id = Column(Integer, ForeignKey("employees.id"), nullable=True)  # Who assigned (nullable: non-employee admins can assign)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     status = Column(SQLEnum(ActivityStatus), default=ActivityStatus.assigned)
     priority = Column(String, default="medium")  # low, medium, high, critical

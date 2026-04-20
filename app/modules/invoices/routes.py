@@ -7,6 +7,7 @@ from app.core.security import require_roles
 from app.modules.invoices.schemas import GenerateInvoiceRequest, InvoiceOut, UpdateInvoiceRequest
 from app.modules.invoices import services as invoice_services
 from app.services.activity_logging_service import log_activity
+from app.services.billing_service import run_auto_billing
 
 
 router = APIRouter(tags=["Invoices"])
@@ -188,3 +189,23 @@ def delete_invoice(
     )
 
     return api_success({"deleted": True})
+
+
+@router.post("/invoices/auto-generate")
+def auto_generate_invoices(
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    """Run automatic billing for all projects with auto_billing_enabled=True
+    whose next_billing_date is today or past."""
+    result = run_auto_billing(db)
+
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="create",
+        entity_type="invoice",
+        description=f"Auto-billing run: {result['generated']} invoice(s) generated",
+    )
+
+    return api_success(result)

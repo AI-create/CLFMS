@@ -209,7 +209,7 @@ export default function DocumentsPage() {
               className="bg-white p-4 rounded-lg shadow border border-gray-200 hover:shadow-md transition"
             >
               <div className="flex items-start gap-3 mb-3">
-                <span className="text-3xl">ðŸ“„</span>
+                <File size={32} className="text-blue-400 mt-1 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-gray-900">
                     {doc.doc_type?.toUpperCase()} #{doc.entity_id}

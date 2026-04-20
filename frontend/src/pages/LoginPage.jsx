@@ -5,7 +5,7 @@ import { AlertCircle, Loader } from "lucide-react";
 
 const API_URL = "/api/v1";
 
-export default function LoginPage({ onLoginSuccess }) {
+export default function LoginPage({ onLoginSuccess, onShowSignup }) {
   const [email, setEmail] = useState("admin@clfms.local");
   const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
@@ -80,9 +80,6 @@ export default function LoginPage({ onLoginSuccess }) {
                 required
                 disabled={loading}
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Demo: admin@clfms.local
-              </p>
             </div>
 
             {/* Password */}
@@ -99,7 +96,6 @@ export default function LoginPage({ onLoginSuccess }) {
                 required
                 disabled={loading}
               />
-              <p className="mt-1 text-xs text-gray-500">Demo: admin123</p>
             </div>
 
             {/* Submit */}
@@ -114,13 +110,16 @@ export default function LoginPage({ onLoginSuccess }) {
           </form>
 
           {/* Footer */}
-          <div className="mt-8 pt-8 border-t border-gray-200 text-center text-sm text-gray-600">
-            <p>Demo Credentials</p>
-            <p className="mt-2">
-              <strong>Email:</strong> admin@clfms.local
-            </p>
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
             <p>
-              <strong>Password:</strong> password
+              Don&apos;t have an account?{" "}
+              <button
+                type="button"
+                onClick={onShowSignup}
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Sign up
+              </button>
             </p>
           </div>
         </div>

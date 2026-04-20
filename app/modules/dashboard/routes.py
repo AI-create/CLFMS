@@ -24,7 +24,7 @@ router = APIRouter(tags=["Dashboard"])
 @router.get("/dashboard/kpis")
 def kpis(
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "sales", "operations", "pm", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "sales", "operations", "pm", "project_manager", "researcher"])),
 ):
     """Get key performance indicators"""
     return api_success(KpiOut(**get_kpis(db)))
@@ -33,7 +33,7 @@ def kpis(
 @router.get("/dashboard/financial-summary")
 def financial_summary(
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get comprehensive financial summary including income/expense breakdown"""
     summary = get_financial_summary(db)
@@ -43,7 +43,7 @@ def financial_summary(
 @router.get("/dashboard/profit-trend")
 def profit_trend(
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get 30-day profit trend for charting"""
     trend = get_30day_trend(db)
@@ -57,7 +57,7 @@ def profit_trend(
 def top_projects(
     limit: int = Query(5, ge=1, le=20),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get top performing projects by profit"""
     projects = get_top_projects(db, limit)

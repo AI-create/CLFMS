@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   Lock,
+  Zap,
 } from "lucide-react";
 import ProjectForm from "../components/ProjectForm";
 import { useProjectLocks } from "../hooks/useProjectLocks";
@@ -84,6 +85,16 @@ export default function ProjectsPage() {
   const handleFormClose = () => {
     setShowForm(false);
     setEditingProject(null);
+  };
+
+  const handleBillNow = async (projectId) => {
+    if (!window.confirm("Generate invoice for this project now?")) return;
+    try {
+      await axios.post(`${API_URL}/projects/${projectId}/trigger-billing`);
+      alert("Invoice generated successfully. Check the Invoices page.");
+    } catch (err) {
+      setError(apiError(err, "Billing failed"));
+    }
   };
 
   const handleFormSubmit = async () => {
@@ -182,12 +193,32 @@ export default function ProjectsPage() {
                   <h3 className="text-lg font-semibold text-gray-900 flex-1">
                     {project.name}
                   </h3>
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded ${statusColors[project.status] || "bg-gray-100"}`}
-                  >
-                    {project.status?.charAt(0).toUpperCase() +
-                      project.status?.slice(1)}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={`text-xs font-medium px-2 py-1 rounded ${statusColors[project.status] || "bg-gray-100"}`}
+                    >
+                      {project.status?.charAt(0).toUpperCase() +
+                        project.status?.slice(1)}
+                    </span>
+                    {project.billing_type && (
+                      <span
+                        className={`text-xs font-medium px-2 py-1 rounded ${
+                          project.billing_type === "upfront"
+                            ? "bg-indigo-100 text-indigo-800"
+                            : "bg-orange-100 text-orange-800"
+                        }`}
+                        title={
+                          project.billing_type === "upfront"
+                            ? "Upfront — charged before period"
+                            : "In Arrears — charged after usage"
+                        }
+                      >
+                        {project.billing_type === "upfront"
+                          ? "Upfront"
+                          : "In Arrears"}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {project.description && (
@@ -238,6 +269,16 @@ export default function ProjectsPage() {
                             <ChevronDown size={14} />
                           )}
                         </button>
+                        {project.billing_type && (
+                          <button
+                            onClick={() => handleBillNow(project.id)}
+                            className="flex items-center justify-center gap-1 px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded transition"
+                            title={`Generate ${project.billing_type === "upfront" ? "upfront" : "in-arrears"} invoice now`}
+                          >
+                            <Zap size={14} />
+                            Bill
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             if (!lock.can_edit) return;

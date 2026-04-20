@@ -30,7 +30,7 @@ router = APIRouter(tags=["Research"])
 def create_research_project(
     payload: CreateResearchProject,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Create a new research project"""
     project = services.ResearchService.create_research_project(db, payload)
@@ -58,7 +58,7 @@ def list_research_projects(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """List research projects with filters"""
     projects, total = services.ResearchService.list_research_projects(
@@ -82,7 +82,7 @@ def list_research_projects(
 def get_research_project(
     project_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get a research project by ID"""
     project = services.ResearchService.get_research_project(db, project_id)
@@ -96,7 +96,7 @@ def update_research_project(
     project_id: int,
     payload: UpdateResearchProject,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Update a research project"""
     project = services.ResearchService.update_research_project(db, project_id, payload)
@@ -122,7 +122,7 @@ def update_research_project(
 def get_project_summary(
     project_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get a summary of research project activity"""
     summary = services.ResearchService.get_project_summary(db, project_id)
@@ -138,7 +138,7 @@ def create_experiment(
     project_id: int,
     payload: CreateExperiment,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Create an experiment for a research project"""
     # Verify project exists
@@ -170,7 +170,7 @@ def list_experiments(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """List experiments for a project"""
     # Verify project exists
@@ -198,7 +198,7 @@ def list_experiments(
 def get_experiment(
     experiment_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get an experiment by ID"""
     experiment = services.ResearchService.get_experiment(db, experiment_id)
@@ -212,7 +212,7 @@ def update_experiment(
     experiment_id: int,
     payload: dict,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Update an experiment"""
     experiment = services.ResearchService.update_experiment(db, experiment_id, payload)
@@ -241,7 +241,7 @@ def create_research_log(
     experiment_id: int,
     payload: CreateResearchLog,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Create a research log for an experiment"""
     experiment = services.ResearchService.get_experiment(db, experiment_id)
@@ -271,7 +271,7 @@ def create_research_log(
 def get_experiment_logs(
     experiment_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get all logs for an experiment"""
     experiment = services.ResearchService.get_experiment(db, experiment_id)
@@ -288,7 +288,7 @@ def get_experiment_logs(
 def get_ip_potential_experiments(
     project_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get experiments with IP potential from a project"""
     # Verify project exists
@@ -307,7 +307,7 @@ def get_ip_potential_experiments(
 def get_reproducible_experiments(
     project_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get reproducible experiments from a project"""
     # Verify project exists

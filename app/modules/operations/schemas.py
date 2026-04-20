@@ -185,7 +185,7 @@ class TaskAssignmentOut(BaseModel):
     title: str
     description: Optional[str]
     assigned_to_id: int
-    assigned_by_id: int
+    assigned_by_id: Optional[int] = None
     project_id: Optional[int]
     status: str
     priority: str

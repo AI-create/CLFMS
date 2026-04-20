@@ -15,7 +15,7 @@ router = APIRouter(tags=["Tasks"])
 def create_task(
     payload: CreateTask,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance", "researcher"])),
 ):
     task = services.create_task(db, payload)
     return api_success(TaskOut.model_validate(task))
@@ -40,7 +40,7 @@ def update_task(
     task_id: int,
     payload: CreateTask,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance", "researcher"])),
 ):
     task = services.update_task(db, task_id, payload)
     if not task:
@@ -55,7 +55,7 @@ def list_tasks(
     page: int = 1,
     limit: int = 20,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance", "researcher"])),
 ):
     page = max(page, 1)
     limit = min(max(limit, 1), 100)
@@ -72,7 +72,7 @@ def list_tasks(
 def create_time_log(
     payload: CreateTimeLog,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance", "researcher"])),
 ):
     # Basic validation: ensure task exists.
     if not services.get_task(db, payload.task_id):

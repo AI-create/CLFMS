@@ -129,6 +129,30 @@ def update_hourly_income(
     return api_success(HourlyIncomeOut.model_validate(income))
 
 
+@router.delete("/hourly-incomes/{income_id}")
+def delete_hourly_income(
+    income_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    """Delete hourly income"""
+    income = services.FIIOService.get_hourly_income(db, income_id)
+    if not income:
+        return api_error("NOT_FOUND", "Hourly income not found", http_status=404)
+    db.delete(income)
+    db.commit()
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="hourly_income",
+        entity_id=income_id,
+        entity_name=f"Income #{income_id}",
+        description=f"Deleted hourly income #{income_id}",
+    )
+    return api_success({"deleted": True})
+
+
 # ===== PROJECT INCOME ENDPOINTS =====
 
 @router.post("/project-incomes")
@@ -180,6 +204,30 @@ def list_project_incomes(
             meta={"total": total, "page": page, "limit": limit},
         ).model_dump()
     )
+
+
+@router.delete("/project-incomes/{income_id}")
+def delete_project_income(
+    income_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    """Delete project income"""
+    income = services.FIIOService.get_project_income(db, income_id)
+    if not income:
+        return api_error("NOT_FOUND", "Project income not found", http_status=404)
+    db.delete(income)
+    db.commit()
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="project_income",
+        entity_id=income_id,
+        entity_name=f"Income #{income_id}",
+        description=f"Deleted project income #{income_id}",
+    )
+    return api_success({"deleted": True})
 
 
 # ===== HOURLY EXPENSE ENDPOINTS =====
@@ -237,6 +285,30 @@ def list_hourly_expenses(
     )
 
 
+@router.delete("/hourly-expenses/{expense_id}")
+def delete_hourly_expense(
+    expense_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    """Delete hourly expense"""
+    expense = services.FIIOService.get_hourly_expense(db, expense_id)
+    if not expense:
+        return api_error("NOT_FOUND", "Hourly expense not found", http_status=404)
+    db.delete(expense)
+    db.commit()
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="hourly_expense",
+        entity_id=expense_id,
+        entity_name=f"Expense #{expense_id}",
+        description=f"Deleted hourly expense #{expense_id}",
+    )
+    return api_success({"deleted": True})
+
+
 # ===== PROJECT EXPENSE ENDPOINTS =====
 
 @router.post("/project-expenses")
@@ -288,6 +360,30 @@ def list_project_expenses(
             meta={"total": total, "page": page, "limit": limit},
         ).model_dump()
     )
+
+
+@router.delete("/project-expenses/{expense_id}")
+def delete_project_expense(
+    expense_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    """Delete project expense"""
+    expense = services.FIIOService.get_project_expense(db, expense_id)
+    if not expense:
+        return api_error("NOT_FOUND", "Project expense not found", http_status=404)
+    db.delete(expense)
+    db.commit()
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="project_expense",
+        entity_id=expense_id,
+        entity_name=f"Expense #{expense_id}",
+        description=f"Deleted project expense #{expense_id}",
+    )
+    return api_success({"deleted": True})
 
 
 # ===== PROFIT ANALYTICS =====
@@ -348,3 +444,18 @@ def get_live_profit_summary(
     """Get live profit summary for last N days"""
     summary = services.FIIOService.get_live_profit_summary(db, days)
     return api_success(summary)
+
+
+@router.get("/intelligence")
+def get_intelligence(
+    days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    """
+    Financial Intelligence Overview — auto-aggregates income and expenses
+    from ALL company modules (invoices, payments, finance, operations).
+    Returns hourly earnings rate and earning potential analysis.
+    """
+    data = services.FIIOService.get_intelligence(db, days)
+    return api_success(data)

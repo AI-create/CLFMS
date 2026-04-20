@@ -15,6 +15,11 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
       start_date: "",
       end_date: "",
       client_id: "",
+      billing_type: "",
+      billing_cycle: "one_time",
+      billing_rate: "",
+      auto_billing_enabled: false,
+      next_billing_date: "",
     },
   );
   const [clients, setClients] = useState([]);
@@ -39,8 +44,11 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -53,6 +61,13 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
         ...formData,
         budget: formData.budget ? parseFloat(formData.budget) : null,
         client_id: parseInt(formData.client_id),
+        billing_type: formData.billing_type || null,
+        billing_cycle: formData.billing_cycle || null,
+        billing_rate: formData.billing_rate
+          ? parseFloat(formData.billing_rate)
+          : null,
+        auto_billing_enabled: !!formData.auto_billing_enabled,
+        next_billing_date: formData.next_billing_date || null,
       };
 
       if (project?.id) {
@@ -219,6 +234,109 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Billing Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Billing Configuration
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Billing Type
+                </label>
+                <select
+                  name="billing_type"
+                  value={formData.billing_type || ""}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
+                >
+                  <option value="">Manual (no auto-billing)</option>
+                  <option value="upfront">
+                    Upfront &mdash; Charge before period (SaaS / Self-serve)
+                  </option>
+                  <option value="in_arrears">
+                    In Arrears &mdash; Charge after usage (Usage-based /
+                    Enterprise)
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Billing Cycle
+                </label>
+                <select
+                  name="billing_cycle"
+                  value={formData.billing_cycle || "one_time"}
+                  onChange={handleChange}
+                  disabled={!formData.billing_type}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600 disabled:bg-gray-100"
+                >
+                  <option value="one_time">One-time</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+            </div>
+
+            {formData.billing_type && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.billing_type === "upfront"
+                      ? "Fixed Fee per Cycle (\u20b9)"
+                      : "Hourly Rate (\u20b9/hr)"}
+                  </label>
+                  <input
+                    type="number"
+                    name="billing_rate"
+                    value={formData.billing_rate || ""}
+                    onChange={handleChange}
+                    step="0.01"
+                    min="0"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Next Billing Date
+                  </label>
+                  <input
+                    type="date"
+                    name="next_billing_date"
+                    value={formData.next_billing_date || ""}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
+                  />
+                </div>
+              </div>
+            )}
+
+            {formData.billing_type && (
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="auto_billing_enabled"
+                  name="auto_billing_enabled"
+                  checked={!!formData.auto_billing_enabled}
+                  onChange={handleChange}
+                  className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+                />
+                <label
+                  htmlFor="auto_billing_enabled"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Enable automatic billing (auto-generates invoice when next
+                  billing date is reached)
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Actions */}

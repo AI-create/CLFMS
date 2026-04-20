@@ -68,12 +68,24 @@ import FilesPage from "./pages/FilesPage";
 import ActivityLogsPage from "./pages/ActivityLogsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import OperationsPage from "./pages/OperationsPage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import "./index.css";
 
-const API_URL = "/api/v1";
+// Pages a researcher is allowed to visit
+const RESEARCHER_PAGES = new Set([
+  "dashboard",
+  "research",
+  "tasks",
+  "operations",
+  "files",
+  "activity-logs",
+  "profile",
+]);
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -82,6 +94,7 @@ export default function App() {
     const stored = localStorage.getItem("user");
     return stored ? JSON.parse(stored) : null;
   });
+  const [showSignup, setShowSignup] = useState(false);
 
   // Setup axios interceptor for token
   useEffect(() => {
@@ -106,8 +119,30 @@ export default function App() {
     delete axios.defaults.headers.common["Authorization"];
   };
 
+  const handleUserUpdate = (updatedUser) => {
+    if (!updatedUser) return;
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
+  // Guard page navigation for researcher role
+  const handleSetCurrentPage = (page) => {
+    if (user?.role === "researcher" && !RESEARCHER_PAGES.has(page)) {
+      return; // silently block — sidebar won't show the link anyway
+    }
+    setCurrentPage(page);
+  };
+
   if (!token) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    if (showSignup) {
+      return <SignupPage onShowLogin={() => setShowSignup(false)} />;
+    }
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onShowSignup={() => setShowSignup(true)}
+      />
+    );
   }
 
   const renderPage = () => {
@@ -148,6 +183,14 @@ export default function App() {
         return <ExpensesPage />;
       case "operations":
         return <OperationsPage />;
+      case "profile":
+        return <ProfilePage user={user} onUpdate={handleUserUpdate} />;
+      case "settings":
+        return user?.role === "admin" || user?.role === "founder" ? (
+          <SettingsPage user={user} />
+        ) : (
+          <Dashboard />
+        );
       default:
         return <Dashboard />;
     }
@@ -158,11 +201,16 @@ export default function App() {
       <div className="flex h-screen bg-gray-50">
         <Sidebar
           currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
+          setCurrentPage={handleSetCurrentPage}
           onLogout={handleLogout}
+          user={user}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header user={user} onLogout={handleLogout} />
+          <Header
+            user={user}
+            onLogout={handleLogout}
+            setCurrentPage={handleSetCurrentPage}
+          />
           <main className="flex-1 overflow-auto">
             <ErrorBoundary key={currentPage}>{renderPage()}</ErrorBoundary>
           </main>

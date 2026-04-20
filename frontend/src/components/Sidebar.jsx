@@ -16,29 +16,54 @@ import {
   BarChart2,
   DollarSign,
   ClipboardList,
+  User,
+  Settings,
 } from "lucide-react";
 
-export default function Sidebar({ currentPage, setCurrentPage, onLogout }) {
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "clients", label: "Clients", icon: Users },
-    { id: "leads", label: "Leads", icon: PhoneIncoming },
-    { id: "projects", label: "Projects", icon: FolderOpen },
-    { id: "invoices", label: "Invoices", icon: Receipt },
-    { id: "payments", label: "Payments", icon: TrendingUp },
-    { id: "financial-reports", label: "Financial Reports", icon: TrendingUp },
-    { id: "tasks", label: "Tasks", icon: CheckSquare },
-    { id: "employees", label: "Employees", icon: Users },
-    { id: "onboarding", label: "Onboarding", icon: Briefcase },
-    { id: "research", label: "Research", icon: BookOpen },
-    { id: "documents", label: "Documents", icon: FileText },
-    { id: "closure", label: "Closure", icon: Archive },
-    { id: "fiio", label: "FI-IO Tracking", icon: BarChart2 },
-    { id: "files", label: "Files", icon: Upload },
-    { id: "expenses", label: "Expenses", icon: DollarSign },
-    { id: "operations", label: "Operations", icon: ClipboardList },
-    { id: "activity-logs", label: "Activity Logs", icon: Activity },
-  ];
+// Pages accessible to the researcher role
+const RESEARCHER_PAGES = new Set([
+  "dashboard",
+  "research",
+  "tasks",
+  "operations",
+  "files",
+  "activity-logs",
+  "profile",
+]);
+
+const ALL_MENU_ITEMS = [
+  { id: "dashboard", label: "Dashboard", icon: Home },
+  { id: "clients", label: "Clients", icon: Users },
+  { id: "leads", label: "Leads", icon: PhoneIncoming },
+  { id: "projects", label: "Projects", icon: FolderOpen },
+  { id: "invoices", label: "Invoices", icon: Receipt },
+  { id: "payments", label: "Payments", icon: TrendingUp },
+  { id: "financial-reports", label: "Financial Reports", icon: TrendingUp },
+  { id: "tasks", label: "Tasks", icon: CheckSquare },
+  { id: "employees", label: "Employees", icon: Users },
+  { id: "onboarding", label: "Onboarding", icon: Briefcase },
+  { id: "research", label: "Research", icon: BookOpen },
+  { id: "documents", label: "Documents", icon: FileText },
+  { id: "closure", label: "Closure", icon: Archive },
+  { id: "fiio", label: "FI-IO Tracking", icon: BarChart2 },
+  { id: "files", label: "Files", icon: Upload },
+  { id: "expenses", label: "Expenses", icon: DollarSign },
+  { id: "operations", label: "Operations", icon: ClipboardList },
+  { id: "activity-logs", label: "Activity Logs", icon: Activity },
+];
+
+export default function Sidebar({
+  currentPage,
+  setCurrentPage,
+  onLogout,
+  user,
+}) {
+  const role = user?.role;
+  const isResearcher = role === "researcher";
+
+  const menuItems = isResearcher
+    ? ALL_MENU_ITEMS.filter((item) => RESEARCHER_PAGES.has(item.id))
+    : ALL_MENU_ITEMS;
 
   return (
     <aside className="w-64 bg-gray-900 text-white flex flex-col">
@@ -56,7 +81,7 @@ export default function Sidebar({ currentPage, setCurrentPage, onLogout }) {
       </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 px-4 py-6">
+      <nav className="flex-1 px-4 py-6 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -76,6 +101,34 @@ export default function Sidebar({ currentPage, setCurrentPage, onLogout }) {
             </button>
           );
         })}
+
+        {/* Profile — all roles */}
+        <button
+          onClick={() => setCurrentPage("profile")}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition ${
+            currentPage === "profile"
+              ? "bg-primary-600 text-white"
+              : "text-gray-300 hover:bg-gray-800 hover:text-white"
+          }`}
+        >
+          <User size={20} />
+          <span className="font-medium">Profile</span>
+        </button>
+
+        {/* Settings — admin and founder only */}
+        {(role === "admin" || role === "founder") && (
+          <button
+            onClick={() => setCurrentPage("settings")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition ${
+              currentPage === "settings"
+                ? "bg-primary-600 text-white"
+                : "text-gray-300 hover:bg-gray-800 hover:text-white"
+            }`}
+          >
+            <Settings size={20} />
+            <span className="font-medium">Settings</span>
+          </button>
+        )}
       </nav>
 
       {/* Footer */}

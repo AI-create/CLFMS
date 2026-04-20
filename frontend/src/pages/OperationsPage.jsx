@@ -1,7 +1,14 @@
 ﻿import { useState, useEffect } from "react";
 import { apiError } from "../utils/apiError";
 import axios from "axios";
-import { Plus, Edit, AlertCircle, Loader, ClipboardList } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  AlertCircle,
+  Loader,
+  ClipboardList,
+} from "lucide-react";
 
 const API_URL = "/api/v1";
 
@@ -161,6 +168,18 @@ export default function OperationsPage() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this task assignment? This cannot be undone."))
+      return;
+    try {
+      await axios.delete(`${API_URL}/task-assignments/${id}`);
+      setAssignments(assignments.filter((t) => t.id !== id));
+      setTotal((prev) => prev - 1);
+    } catch (err) {
+      alert(apiError(err, "Failed to delete task assignment"));
+    }
+  };
+
   const pendingCount = assignments.filter(
     (t) => t.status === "assigned",
   ).length;
@@ -297,7 +316,9 @@ export default function OperationsPage() {
                         ?.name || `Emp #${task.assigned_to_id}`}
                     </td>
                     <td className="table-td text-gray-500">
-                      {task.project_id ? `Project #${task.project_id}` : "â€”"}
+                      {task.project_id
+                        ? `Project #${task.project_id}`
+                        : "\u2014"}
                     </td>
                     <td className="table-td">
                       <span
@@ -322,7 +343,7 @@ export default function OperationsPage() {
                       </select>
                     </td>
                     <td className="table-td text-gray-500 text-sm">
-                      {task.due_date || "â€”"}
+                      {task.due_date || "\u2014"}
                     </td>
                     <td className="table-td">
                       <div className="flex items-center gap-2">
@@ -340,13 +361,22 @@ export default function OperationsPage() {
                       </div>
                     </td>
                     <td className="table-td">
-                      <button
-                        onClick={() => handleEdit(task)}
-                        className="text-primary-600 hover:text-primary-800"
-                        title="Edit"
-                      >
-                        <Edit size={16} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEdit(task)}
+                          className="text-primary-600 hover:text-primary-800"
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(task.id)}
+                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -387,7 +417,7 @@ export default function OperationsPage() {
                       setForm({ ...form, assigned_to_id: e.target.value })
                     }
                   >
-                    <option value="">Select employeeâ€¦</option>
+                    <option value="">Select employee&hellip;</option>
                     {employees.map((emp) => (
                       <option key={emp.id} value={emp.id}>
                         {emp.name} ({emp.employee_id})

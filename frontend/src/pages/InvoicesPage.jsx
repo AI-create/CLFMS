@@ -11,6 +11,7 @@ import {
   Pencil,
   Trash2,
   Lock,
+  Zap,
 } from "lucide-react";
 import InvoiceForm from "../components/InvoiceForm";
 import { useProjectLocks } from "../hooks/useProjectLocks";
@@ -29,6 +30,7 @@ export default function InvoicesPage() {
   const [editForm, setEditForm] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [autoBillingResult, setAutoBillingResult] = useState(null);
   const { getProjectLock } = useProjectLocks();
 
   useEffect(() => {
@@ -120,6 +122,21 @@ export default function InvoicesPage() {
     setEditingInvoice(null);
   };
 
+  const handleAutoGenerate = async () => {
+    setActionLoading(true);
+    setError(null);
+    setAutoBillingResult(null);
+    try {
+      const res = await axios.post(`${API_URL}/invoices/auto-generate`);
+      setAutoBillingResult(res.data.data);
+      await fetchInvoices();
+    } catch (err) {
+      setError(apiError(err, "Auto-billing failed"));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleFormSubmit = async () => {
     await fetchInvoices();
     handleFormClose();
@@ -159,14 +176,65 @@ export default function InvoicesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus size={20} />
-          New Invoice
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleAutoGenerate}
+            disabled={actionLoading}
+            className="btn-secondary flex items-center gap-2"
+            title="Auto-generate invoices for projects with billing enabled"
+          >
+            {actionLoading ? (
+              <Loader size={16} className="animate-spin" />
+            ) : (
+              <Zap size={16} />
+            )}
+            Run Auto-Billing
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus size={20} />
+            New Invoice
+          </button>
+        </div>
       </div>
+
+      {/* Auto-billing result banner */}
+      {autoBillingResult && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start justify-between gap-3">
+          <div>
+            <p className="font-medium text-green-800">
+              Auto-billing complete: {autoBillingResult.generated} invoice(s)
+              generated
+              {autoBillingResult.errors > 0 &&
+                `, ${autoBillingResult.errors} error(s)`}
+            </p>
+            {autoBillingResult.invoices?.length > 0 && (
+              <ul className="mt-1 text-sm text-green-700 list-disc list-inside">
+                {autoBillingResult.invoices.map((inv) => (
+                  <li key={inv.invoice_id}>
+                    {inv.invoice_number} &mdash; {inv.project_name} (
+                    {inv.billing_type})
+                  </li>
+                ))}
+              </ul>
+            )}
+            {autoBillingResult.generated === 0 &&
+              autoBillingResult.errors === 0 && (
+                <p className="text-sm text-green-700">
+                  No projects were due for billing.
+                </p>
+              )}
+          </div>
+          <button
+            onClick={() => setAutoBillingResult(null)}
+            className="text-green-600 hover:text-green-800 text-lg font-bold leading-none"
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">

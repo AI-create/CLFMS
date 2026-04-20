@@ -30,7 +30,7 @@ def get_activity_logs(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get activity logs with optional filtering."""
     logs, total = ActivityLogService.get_activity_logs(
@@ -61,7 +61,7 @@ def get_entity_audit_trail(
     entity_type: str,
     entity_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get complete audit trail for a specific entity."""
     logs = ActivityLogService.get_entity_audit_trail(db, entity_type, entity_id)
@@ -105,7 +105,7 @@ def get_activity_summary(
 def get_user_activity_summary(
     user_email: str,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get activity summary for a specific user."""
     summary = ActivityLogService.get_user_activity_summary(db, user_email)
@@ -125,7 +125,7 @@ def get_user_activity_summary(
 def get_recent_activity(
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "finance", "project_manager"])),
+    _user=Depends(require_roles(["admin", "finance", "project_manager", "researcher"])),
 ):
     """Get recent activity across all entities."""
     logs = ActivityLogService.get_recent_activity(db, limit)

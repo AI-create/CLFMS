@@ -70,7 +70,7 @@ async def upload_file(
     entity_id: Optional[int] = Query(None),
     description: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance"])),
+    current_user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance", "researcher"])),
 ):
     """Upload a file."""
     filename, mime_type = validate_file(file)
@@ -115,7 +115,7 @@ def list_files(
     entity_type: Optional[str] = Query(None),
     entity_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance"])),
+    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance", "researcher"])),
 ):
     """List files with optional filtering."""
     files, total = FileService.list_files(
@@ -141,7 +141,7 @@ def list_files(
 def get_file_metadata(
     file_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance"])),
+    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance", "researcher"])),
 ):
     """Get file metadata."""
     file = FileService.get_file(db, file_id)
@@ -168,7 +168,7 @@ def get_file_metadata(
 def download_file(
     file_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance"])),
+    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance", "researcher"])),
 ):
     """Download a file."""
     file = FileService.get_file(db, file_id)
@@ -332,7 +332,7 @@ async def create_file_version(
 def get_file(
     file_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance"])),
+    _user=Depends(require_roles(["admin", "sales", "project_manager", "pm", "finance", "researcher"])),
 ):
     """Get file details."""
     file = FileService.get_file(db, file_id)

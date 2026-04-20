@@ -12,6 +12,15 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.execute(stmt).scalar_one_or_none()
 
 
+def get_user_by_id(db: Session, user_id: int) -> User | None:
+    stmt = select(User).where(User.id == user_id)
+    return db.execute(stmt).scalar_one_or_none()
+
+
+def list_users(db: Session) -> list[User]:
+    return db.execute(select(User).order_by(User.id)).scalars().all()
+
+
 def authenticate_user(db: Session, *, email: str, password: str) -> User:
     user = get_user_by_email(db, email)
     if not user or not user.is_active:
@@ -23,7 +32,7 @@ def authenticate_user(db: Session, *, email: str, password: str) -> User:
     return user
 
 
-def create_user(db: Session, *, email: str, password: str, role: str = "admin") -> User:
+def create_user(db: Session, *, email: str, password: str, role: str = "admin", full_name: str | None = None) -> User:
     existing = get_user_by_email(db, email)
     if existing:
         return existing
@@ -32,12 +41,84 @@ def create_user(db: Session, *, email: str, password: str, role: str = "admin") 
         email=email,
         password_hash=get_password_hash(password),
         role=role,
+        full_name=full_name,
         is_active=True,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
+
+
+def signup_user(db: Session, *, email: str, password: str, role: str = "researcher", full_name: str | None = None) -> User:
+    """Public registration — role defaults to researcher; admins assign other roles."""
+    existing = get_user_by_email(db, email.lower().strip())
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    user = User(
+        email=email.lower().strip(),
+        password_hash=get_password_hash(password),
+        role=role,
+        full_name=full_name,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_profile(db: Session, *, user: User, full_name: str | None, email: str | None,
+                   current_password: str | None, new_password: str | None) -> User:
+    if full_name is not None:
+        user.full_name = full_name
+
+    if email and email != user.email:
+        conflict = get_user_by_email(db, email)
+        if conflict and conflict.id != user.id:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
+        user.email = email
+
+    if new_password:
+        if not current_password:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password required to set a new password")
+        if not verify_password(current_password, user.password_hash):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+        user.password_hash = get_password_hash(new_password)
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def admin_update_user(db: Session, *, user_id: int, full_name: str | None, role: str | None, is_active: bool | None) -> User:
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if full_name is not None:
+        user.full_name = full_name
+    if role is not None:
+        user.role = role
+    if is_active is not None:
+        user.is_active = is_active
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def delete_user(db: Session, *, user_id: int, requester_id: int) -> None:
+    if user_id == requester_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    db.delete(user)
+    db.commit()
 
 
 def login_and_issue_token(db: Session, *, email: str, password: str) -> tuple[str, User]:
@@ -62,5 +143,6 @@ def ensure_default_admin(db: Session) -> None:
         email=settings.default_admin_email,
         password=settings.default_admin_password,
         role=settings.default_admin_role,
+        full_name="System Admin",
     )
 

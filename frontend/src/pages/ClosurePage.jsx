@@ -347,7 +347,7 @@ export default function ClosurePage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">
-              Edit Closure â€” {editingClosure.project_name}
+              Edit Closure &mdash; {editingClosure.project_name}
             </h2>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
@@ -384,7 +384,7 @@ export default function ClosurePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Satisfaction (1â€“5)
+                  Client Satisfaction (1&ndash;5)
                 </label>
                 <input
                   type="number"
@@ -517,10 +517,12 @@ export default function ClosurePage() {
                       {closure.client_satisfaction_rating && (
                         <div className="flex items-center gap-1">
                           <span className="text-yellow-500">
-                            {"â˜…".repeat(closure.client_satisfaction_rating)}
+                            {"\u2605".repeat(
+                              closure.client_satisfaction_rating,
+                            )}
                           </span>
                           <span className="text-gray-300">
-                            {"â˜…".repeat(
+                            {"\u2606".repeat(
                               5 - closure.client_satisfaction_rating,
                             )}
                           </span>
@@ -570,7 +572,7 @@ export default function ClosurePage() {
                             }
                             className="px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
                           >
-                            âœ“ Deliverables Done
+                            &#10003; Deliverables Done
                           </button>
                         )}
                         {!closure.final_payment_received && (

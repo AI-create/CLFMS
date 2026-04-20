@@ -63,9 +63,9 @@ def list_employees(
     department: str | None = Query(None),
     status: str | None = Query(None),
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "hr", "project_manager"])),
+    _user=Depends(require_roles(["admin", "operations", "hr", "project_manager", "researcher"])),
 ):
     """List employees with filters"""
     employees, total = services.OperationsService.list_employees(
@@ -88,7 +88,7 @@ def list_employees(
 def get_employee(
     employee_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "hr", "project_manager"])),
+    _user=Depends(require_roles(["admin", "operations", "hr", "project_manager", "researcher"])),
 ):
     """Get employee by ID"""
     employee = services.OperationsService.get_employee(db, employee_id)
@@ -194,7 +194,7 @@ def list_activities(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee", "researcher"])),
 ):
     """List activities for employee"""
     # Verify employee exists
@@ -226,7 +226,7 @@ def list_activities(
 def get_activity(
     activity_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee", "researcher"])),
 ):
     """Get activity by ID"""
     activity = services.OperationsService.get_activity(db, activity_id)
@@ -357,7 +357,7 @@ def list_attendances(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee", "researcher"])),
 ):
     """List attendances for employee"""
     employee = services.OperationsService.get_employee(db, employee_id)
@@ -396,7 +396,7 @@ def create_task_assignment(
         return api_error("NOT_FOUND", "Assigned employee not found", http_status=404)
     
     task = services.OperationsService.create_task_assignment(
-        db, _user.get("user_id") or 1, payload
+        db, None, payload
     )
     
     log_activity(
@@ -421,7 +421,7 @@ def list_task_assignments(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee", "researcher"])),
 ):
     """List task assignments"""
     tasks, total = services.OperationsService.list_task_assignments(
@@ -445,7 +445,7 @@ def list_task_assignments(
 def get_task_assignment(
     task_id: int,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee", "researcher"])),
 ):
     """Get task assignment by ID"""
     task = services.OperationsService.get_task_assignment(db, task_id)
@@ -459,7 +459,7 @@ def update_task_assignment(
     task_id: int,
     payload: UpdateTaskAssignment,
     db: Session = Depends(get_db),
-    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee"])),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "employee", "researcher"])),
 ):
     """Update task assignment"""
     task = services.OperationsService.update_task_assignment(
@@ -480,6 +480,30 @@ def update_task_assignment(
     )
     
     return api_success(TaskAssignmentOut.model_validate(task))
+
+
+@router.delete("/task-assignments/{task_id}")
+def delete_task_assignment(
+    task_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "operations", "project_manager"])),
+):
+    """Delete task assignment"""
+    task = services.OperationsService.get_task_assignment(db, task_id)
+    if not task:
+        return api_error("NOT_FOUND", "Task assignment not found", http_status=404)
+    db.delete(task)
+    db.commit()
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="task_assignment",
+        entity_id=task_id,
+        entity_name=task.title,
+        description=f"Deleted task assignment: {task.title}",
+    )
+    return api_success({"deleted": True})
 
 
 # ===== ANALYTICS ENDPOINTS =====
