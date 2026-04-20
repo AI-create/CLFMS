@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -19,7 +20,14 @@ import {
 const API_URL = "/api/v1";
 
 const LEAD_STATUSES = ["new", "contacted", "qualified", "won", "lost"];
-const LEAD_SOURCES = ["linkedin", "referral", "website", "email", "phone", "other"];
+const LEAD_SOURCES = [
+  "linkedin",
+  "referral",
+  "website",
+  "email",
+  "phone",
+  "other",
+];
 
 const STATUS_COLORS = {
   new: "bg-gray-100 text-gray-800",
@@ -55,7 +63,11 @@ export default function LeadsPage() {
   const [followUps, setFollowUps] = useState({});
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [showFollowUpForm, setShowFollowUpForm] = useState(null);
-  const [followUpForm, setFollowUpForm] = useState({ action: "", notes: "", scheduled_date: "" });
+  const [followUpForm, setFollowUpForm] = useState({
+    action: "",
+    notes: "",
+    scheduled_date: "",
+  });
 
   useEffect(() => {
     fetchLeads();
@@ -68,7 +80,7 @@ export default function LeadsPage() {
       setLeads(response.data.data?.items || []);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load leads");
+      setError(apiError(err, "Failed to load leads"));
     } finally {
       setLoading(false);
     }
@@ -79,7 +91,10 @@ export default function LeadsPage() {
       setFollowUpLoading(true);
       const response = await axios.get(`${API_URL}/leads/${leadId}/follow-ups`);
       const data = response.data.data;
-      setFollowUps((prev) => ({ ...prev, [leadId]: Array.isArray(data) ? data : data?.items || [] }));
+      setFollowUps((prev) => ({
+        ...prev,
+        [leadId]: Array.isArray(data) ? data : data?.items || [],
+      }));
     } catch (err) {
       console.error("Failed to load follow-ups", err);
     } finally {
@@ -101,14 +116,18 @@ export default function LeadsPage() {
   const handleAddFollowUp = async (leadId, e) => {
     e.preventDefault();
     try {
-      const payload = { action: followUpForm.action, notes: followUpForm.notes || null };
-      if (followUpForm.scheduled_date) payload.scheduled_date = followUpForm.scheduled_date;
+      const payload = {
+        action: followUpForm.action,
+        notes: followUpForm.notes || null,
+      };
+      if (followUpForm.scheduled_date)
+        payload.scheduled_date = followUpForm.scheduled_date;
       await axios.post(`${API_URL}/leads/${leadId}/follow-ups`, payload);
       setShowFollowUpForm(null);
       setFollowUpForm({ action: "", notes: "", scheduled_date: "" });
       await fetchFollowUps(leadId);
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to add follow-up");
+      alert(apiError(err, "Failed to add follow-up"));
     }
   };
 
@@ -119,7 +138,7 @@ export default function LeadsPage() {
       });
       await fetchFollowUps(leadId);
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to update follow-up");
+      alert(apiError(err, "Failed to update follow-up"));
     }
   };
 
@@ -136,7 +155,7 @@ export default function LeadsPage() {
       setEditingLead(null);
       fetchLeads();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save lead");
+      setError(apiError(err, "Failed to save lead"));
     }
   };
 
@@ -146,7 +165,7 @@ export default function LeadsPage() {
       await axios.delete(`${API_URL}/leads/${id}`);
       setLeads(leads.filter((l) => l.id !== id));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete lead");
+      setError(apiError(err, "Failed to delete lead"));
     }
   };
 
@@ -156,7 +175,7 @@ export default function LeadsPage() {
       await axios.post(`${API_URL}/leads/${id}/convert-to-client`, {});
       fetchLeads();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to convert lead");
+      setError(apiError(err, "Failed to convert lead"));
     }
   };
 
@@ -167,7 +186,8 @@ export default function LeadsPage() {
       lead.contact_name?.toLowerCase().includes(term) ||
       lead.company_name?.toLowerCase().includes(term) ||
       lead.contact_email?.toLowerCase().includes(term);
-    const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || lead.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -180,7 +200,11 @@ export default function LeadsPage() {
           <p className="text-gray-500 mt-1">Manage your sales pipeline</p>
         </div>
         <button
-          onClick={() => { setEditingLead(null); setFormData(EMPTY_FORM); setShowForm(true); }}
+          onClick={() => {
+            setEditingLead(null);
+            setFormData(EMPTY_FORM);
+            setShowForm(true);
+          }}
           className="btn-primary flex items-center gap-2"
         >
           <Plus size={20} />
@@ -214,7 +238,9 @@ export default function LeadsPage() {
         >
           <option value="all">All Statuses</option>
           {LEAD_STATUSES.map((s) => (
-            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            <option key={s} value={s}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </option>
           ))}
         </select>
       </div>
@@ -228,36 +254,53 @@ export default function LeadsPage() {
       ) : (
         <div className="space-y-3">
           {filteredLeads.map((lead) => (
-            <div key={lead.id} className="bg-white rounded-lg shadow border border-gray-200">
+            <div
+              key={lead.id}
+              className="bg-white rounded-lg shadow border border-gray-200"
+            >
               {/* Lead Row */}
               <div className="flex items-center justify-between px-6 py-4">
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <p className="font-semibold text-gray-900">{lead.contact_name}</p>
+                    <p className="font-semibold text-gray-900">
+                      {lead.contact_name}
+                    </p>
                     <p className="text-sm text-gray-500">{lead.company_name}</p>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     {lead.contact_email && (
-                      <a href={`mailto:${lead.contact_email}`} className="flex items-center gap-1 hover:text-primary-600">
+                      <a
+                        href={`mailto:${lead.contact_email}`}
+                        className="flex items-center gap-1 hover:text-primary-600"
+                      >
                         <Mail size={14} />
-                        <span className="truncate max-w-xs">{lead.contact_email}</span>
+                        <span className="truncate max-w-xs">
+                          {lead.contact_email}
+                        </span>
                       </a>
                     )}
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     {lead.contact_phone && (
-                      <a href={`tel:${lead.contact_phone}`} className="flex items-center gap-1 hover:text-primary-600">
+                      <a
+                        href={`tel:${lead.contact_phone}`}
+                        className="flex items-center gap-1 hover:text-primary-600"
+                      >
                         <Phone size={14} />
                         {lead.contact_phone}
                       </a>
                     )}
                   </div>
                   <div>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${STATUS_COLORS[lead.status] || "bg-gray-100 text-gray-800"}`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${STATUS_COLORS[lead.status] || "bg-gray-100 text-gray-800"}`}
+                    >
                       {lead.status}
                     </span>
                     {lead.source && (
-                      <span className="ml-2 text-xs text-gray-400">{lead.source}</span>
+                      <span className="ml-2 text-xs text-gray-400">
+                        {lead.source}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -268,7 +311,11 @@ export default function LeadsPage() {
                     title="Follow-ups"
                   >
                     <MessageSquare size={16} />
-                    {expandedLead === lead.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                    {expandedLead === lead.id ? (
+                      <ChevronUp size={12} />
+                    ) : (
+                      <ChevronDown size={12} />
+                    )}
                   </button>
                   <button
                     onClick={() => handleConvertToClient(lead.id)}
@@ -309,7 +356,9 @@ export default function LeadsPage() {
               {expandedLead === lead.id && (
                 <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-gray-700">Follow-ups</h4>
+                    <h4 className="text-sm font-semibold text-gray-700">
+                      Follow-ups
+                    </h4>
                     <button
                       onClick={() => setShowFollowUpForm(lead.id)}
                       className="text-xs btn-primary py-1 px-2 flex items-center gap-1"
@@ -320,66 +369,121 @@ export default function LeadsPage() {
                   </div>
 
                   {showFollowUpForm === lead.id && (
-                    <form onSubmit={(e) => handleAddFollowUp(lead.id, e)} className="mb-4 bg-white p-3 rounded border border-gray-200 space-y-2">
+                    <form
+                      onSubmit={(e) => handleAddFollowUp(lead.id, e)}
+                      className="mb-4 bg-white p-3 rounded border border-gray-200 space-y-2"
+                    >
                       <input
                         className="form-input text-sm"
                         placeholder="Action (e.g. Call, Email, Demo)"
                         required
                         value={followUpForm.action}
-                        onChange={(e) => setFollowUpForm({ ...followUpForm, action: e.target.value })}
+                        onChange={(e) =>
+                          setFollowUpForm({
+                            ...followUpForm,
+                            action: e.target.value,
+                          })
+                        }
                       />
                       <input
                         className="form-input text-sm"
                         type="datetime-local"
+                        min={new Date(
+                          Date.now() - new Date().getTimezoneOffset() * 60000,
+                        )
+                          .toISOString()
+                          .slice(0, 16)}
                         value={followUpForm.scheduled_date}
-                        onChange={(e) => setFollowUpForm({ ...followUpForm, scheduled_date: e.target.value })}
+                        onChange={(e) =>
+                          setFollowUpForm({
+                            ...followUpForm,
+                            scheduled_date: e.target.value,
+                          })
+                        }
                       />
                       <textarea
                         className="form-input text-sm"
                         rows={2}
                         placeholder="Notes"
                         value={followUpForm.notes}
-                        onChange={(e) => setFollowUpForm({ ...followUpForm, notes: e.target.value })}
+                        onChange={(e) =>
+                          setFollowUpForm({
+                            ...followUpForm,
+                            notes: e.target.value,
+                          })
+                        }
                       />
                       <div className="flex gap-2">
-                        <button type="button" onClick={() => setShowFollowUpForm(null)} className="btn-secondary text-xs py-1 px-3">Cancel</button>
-                        <button type="submit" className="btn-primary text-xs py-1 px-3">Save</button>
+                        <button
+                          type="button"
+                          onClick={() => setShowFollowUpForm(null)}
+                          className="btn-secondary text-xs py-1 px-3"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn-primary text-xs py-1 px-3"
+                        >
+                          Save
+                        </button>
                       </div>
                     </form>
                   )}
 
                   {followUpLoading ? (
-                    <Loader className="animate-spin text-primary-600 mx-auto my-2" size={20} />
+                    <Loader
+                      className="animate-spin text-primary-600 mx-auto my-2"
+                      size={20}
+                    />
                   ) : (followUps[lead.id] || []).length === 0 ? (
-                    <p className="text-sm text-gray-400 italic">No follow-ups yet.</p>
+                    <p className="text-sm text-gray-400 italic">
+                      No follow-ups yet.
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {(followUps[lead.id] || []).map((fu) => (
-                        <div key={fu.id} className="flex items-start justify-between bg-white rounded border border-gray-100 p-3">
+                        <div
+                          key={fu.id}
+                          className="flex items-start justify-between bg-white rounded border border-gray-100 p-3"
+                        >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               {fu.completed_date ? (
-                                <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
+                                <CheckCircle
+                                  size={14}
+                                  className="text-green-500 flex-shrink-0"
+                                />
                               ) : (
                                 <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 flex-shrink-0" />
                               )}
-                              <span className="text-sm font-medium text-gray-800">{fu.action}</span>
+                              <span className="text-sm font-medium text-gray-800">
+                                {fu.action}
+                              </span>
                             </div>
-                            {fu.notes && <p className="text-xs text-gray-500 mt-1 ml-5">{fu.notes}</p>}
+                            {fu.notes && (
+                              <p className="text-xs text-gray-500 mt-1 ml-5">
+                                {fu.notes}
+                              </p>
+                            )}
                             {fu.scheduled_date && (
                               <p className="text-xs text-gray-400 mt-1 ml-5">
-                                Scheduled: {new Date(fu.scheduled_date).toLocaleString()}
+                                Scheduled:{" "}
+                                {new Date(fu.scheduled_date).toLocaleString()}
                               </p>
                             )}
                             {fu.completed_date && (
                               <p className="text-xs text-green-600 mt-1 ml-5">
-                                Done: {new Date(fu.completed_date).toLocaleString()}
+                                Done:{" "}
+                                {new Date(fu.completed_date).toLocaleString()}
                               </p>
                             )}
                           </div>
                           {!fu.completed_date && (
                             <button
-                              onClick={() => handleMarkFollowUpDone(fu.id, lead.id)}
+                              onClick={() =>
+                                handleMarkFollowUpDone(fu.id, lead.id)
+                              }
                               className="text-xs text-green-600 hover:underline ml-2 flex-shrink-0"
                             >
                               Mark Done
@@ -413,7 +517,12 @@ export default function LeadsPage() {
                       type="text"
                       required
                       value={formData.company_name}
-                      onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          company_name: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -423,7 +532,12 @@ export default function LeadsPage() {
                       type="text"
                       required
                       value={formData.contact_name}
-                      onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contact_name: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -434,7 +548,12 @@ export default function LeadsPage() {
                       className="form-input"
                       type="email"
                       value={formData.contact_email}
-                      onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contact_email: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -444,7 +563,12 @@ export default function LeadsPage() {
                       type="tel"
                       required
                       value={formData.contact_phone}
-                      onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contact_phone: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -454,10 +578,14 @@ export default function LeadsPage() {
                     <select
                       className="form-input"
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
                     >
                       {LEAD_STATUSES.map((s) => (
-                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                        <option key={s} value={s}>
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -466,10 +594,14 @@ export default function LeadsPage() {
                     <select
                       className="form-input"
                       value={formData.source}
-                      onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, source: e.target.value })
+                      }
                     >
                       {LEAD_SOURCES.map((s) => (
-                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                        <option key={s} value={s}>
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -480,7 +612,12 @@ export default function LeadsPage() {
                     className="form-input"
                     rows={2}
                     value={formData.company_details}
-                    onChange={(e) => setFormData({ ...formData, company_details: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        company_details: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -489,11 +626,17 @@ export default function LeadsPage() {
                     className="form-input"
                     rows={2}
                     value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
                   />
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="btn-secondary flex-1"
+                  >
                     Cancel
                   </button>
                   <button type="submit" className="btn-primary flex-1">

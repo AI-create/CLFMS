@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { X, Loader } from "lucide-react";
 
@@ -51,6 +52,7 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
       const submitData = {
         ...formData,
         budget: formData.budget ? parseFloat(formData.budget) : null,
+        client_id: parseInt(formData.client_id),
       };
 
       if (project?.id) {
@@ -62,7 +64,7 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
       }
       onSubmit();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save project");
+      setError(apiError(err, "Failed to save project"));
       setLoading(false);
     }
   };
@@ -135,6 +137,7 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
                   name="client_id"
                   value={formData.client_id}
                   onChange={handleChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
                 >
                   <option value="">Select a client</option>
@@ -179,6 +182,7 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
                 <input
                   type="date"
                   name="start_date"
+                  min={new Date().toISOString().split("T")[0]}
                   value={formData.start_date}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
@@ -192,6 +196,7 @@ export default function ProjectForm({ project, onClose, onSubmit }) {
                 <input
                   type="date"
                   name="end_date"
+                  min={new Date().toISOString().split("T")[0]}
                   value={formData.end_date}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"

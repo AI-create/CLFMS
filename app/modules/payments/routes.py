@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.response import api_error, api_success
 from app.core.security import require_roles
 from app.modules.payments import services as payment_services
+from app.modules.payments.models import Payment
 from app.modules.payments.schemas import CreatePayment, PaymentOut
 from app.modules.invoices.models import Invoice
 from sqlalchemy import desc
@@ -59,6 +60,23 @@ def delete_payment(
     db.delete(payment)
     db.commit()
     return api_success({"deleted": True})
+
+
+@router.put("/payments/{payment_id}")
+def update_payment(
+    payment_id: int,
+    payload: CreatePayment,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        return api_error("NOT_FOUND", "Payment not found", http_status=404)
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(payment, key, value)
+    db.commit()
+    db.refresh(payment)
+    return api_success(PaymentOut.model_validate(payment))
 
 
 @router.get("/payments/outstanding")

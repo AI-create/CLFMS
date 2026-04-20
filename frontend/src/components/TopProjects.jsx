@@ -74,9 +74,9 @@ export default function TopProjects({ data }) {
         ))}
       </div>
 
-      {data.projects.length > 5 && (
+      {projects.length > 5 && (
         <p className="text-sm text-gray-500 mt-4 text-center">
-          +{data.projects.length - 5} more projects
+          +{projects.length - 5} more projects
         </p>
       )}
     </div>

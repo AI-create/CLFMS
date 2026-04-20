@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { X } from "lucide-react";
 
@@ -50,7 +51,7 @@ export default function TaskForm({ task, onClose, onSave }) {
       }
       onSave();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save task");
+      setError(apiError(err, "Failed to save task"));
     } finally {
       setLoading(false);
     }

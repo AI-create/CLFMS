@@ -21,8 +21,16 @@ class ClosureService:
         db: Session, project_id: int, payload: ProjectClosureCreate
     ) -> ProjectClosure:
         """Initiate closure for a project with default checklist items."""
-        # Check if closure already exists
-        existing = db.query(ProjectClosure).filter(ProjectClosure.project_id == project_id).first()
+        # Check if an ACTIVE closure already exists (not completed/archived)
+        active_statuses = [ClosureStatus.IN_PROGRESS, ClosureStatus.ON_HOLD, ClosureStatus.ESCALATION]
+        existing = (
+            db.query(ProjectClosure)
+            .filter(
+                ProjectClosure.project_id == project_id,
+                ProjectClosure.status.in_(active_statuses),
+            )
+            .first()
+        )
         if existing:
             return existing
         

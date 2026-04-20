@@ -1,5 +1,55 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component } from "react";
 import axios from "axios";
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, fontFamily: "monospace" }}>
+          <h2 style={{ color: "red" }}>Something went wrong</h2>
+          <pre
+            style={{
+              background: "#fee",
+              padding: 16,
+              borderRadius: 8,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {this.state.error?.message}
+            {"\n\n"}
+            {this.state.error?.stack}
+          </pre>
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            style={{
+              marginTop: 16,
+              padding: "8px 16px",
+              background: "#0284c7",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+            }}
+          >
+            Clear session &amp; reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import Dashboard from "./pages/Dashboard";
 import ClientsPage from "./pages/ClientsPage";
 import ProjectsPage from "./pages/ProjectsPage";
@@ -104,16 +154,20 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        onLogout={handleLogout}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header user={user} onLogout={handleLogout} />
-        <main className="flex-1 overflow-auto">{renderPage()}</main>
+    <ErrorBoundary>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          onLogout={handleLogout}
+        />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header user={user} onLogout={handleLogout} />
+          <main className="flex-1 overflow-auto">
+            <ErrorBoundary key={currentPage}>{renderPage()}</ErrorBoundary>
+          </main>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

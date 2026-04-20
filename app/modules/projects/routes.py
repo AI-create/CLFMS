@@ -65,3 +65,42 @@ def get_project(
     if not project:
         return api_error("NOT_FOUND", "Project not found", http_status=404)
     return api_success(ProjectOut.model_validate(project))
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "project_manager", "pm"])),
+):
+    project = services.get_project(db, project_id)
+    if not project:
+        return api_error("NOT_FOUND", "Project not found", http_status=404)
+
+    name = project.name
+    services.delete_project(db, project_id)
+
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="project",
+        entity_id=project_id,
+        entity_name=name,
+        description=f"Deleted project: {name}"
+    )
+
+    return api_success({"message": f"Project '{name}' deleted successfully"})
+
+
+@router.put("/projects/{project_id}")
+def update_project(
+    project_id: int,
+    payload: CreateProject,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "project_manager", "pm", "sales", "operations", "finance"])),
+):
+    project = services.update_project(db, project_id, payload)
+    if not project:
+        return api_error("NOT_FOUND", "Project not found", http_status=404)
+    return api_success(ProjectOut.model_validate(project))

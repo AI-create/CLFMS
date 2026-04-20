@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import KPICard from "../components/KPICard";
 import FinancialSummary from "../components/FinancialSummary";
@@ -35,7 +36,7 @@ export default function Dashboard() {
         setTopProjects(projRes.data);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
-        setError(err.response?.data?.detail || "Failed to load dashboard data");
+        setError(apiError(err, "Failed to load dashboard data"));
       } finally {
         setLoading(false);
       }

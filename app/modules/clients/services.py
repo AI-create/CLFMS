@@ -28,6 +28,15 @@ def update_client(db: Session, client_id: int, payload: CreateClient) -> Client:
     return client
 
 
+def delete_client(db: Session, client_id: int) -> bool:
+    client = get_client(db, client_id)
+    if not client:
+        return False
+    db.delete(client)
+    db.commit()
+    return True
+
+
 def list_clients(db: Session, *, page: int, limit: int) -> tuple[list[Client], int]:
     total_stmt = select(func.count()).select_from(Client)
     total = db.execute(total_stmt).scalar_one()

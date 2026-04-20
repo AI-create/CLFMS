@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import logging
 
 from app.core.database import get_db
 from app.core.response import api_success, api_error
@@ -15,6 +16,8 @@ from app.modules.onboarding.schemas import (
     OnboardingProgressResponse,
 )
 from app.modules.onboarding.services import OnboardingService
+
+logger = logging.getLogger("clfms")
 
 router = APIRouter(prefix="/onboarding", tags=["Onboarding"])
 
@@ -101,7 +104,8 @@ def add_checklist_item(
         item = OnboardingService.add_checklist_item(db, client_id, payload)
         return api_success(OnboardingChecklistItemResponse.from_orm(item).model_dump())
     except ValueError as e:
-        return api_error("NOT_FOUND", str(e), 404)
+        logger.warning("Onboarding checklist add rejected for client_id=%s: %s", client_id, e)
+        return api_error("NOT_FOUND", "Client or onboarding not found", 404)
 
 
 @router.get("/clients/{client_id}/checklist", response_model=dict)

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -83,7 +84,7 @@ export default function FiioPage() {
       const response = await axios.get(`${API_URL}/${activeTab}`);
       setData(response.data.data?.data || []);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load data");
+      setError(apiError(err, "Failed to load data"));
     } finally {
       setLoading(false);
     }
@@ -102,7 +103,7 @@ export default function FiioPage() {
       setForm(getEmptyForm());
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to create record");
+      alert(apiError(err, "Failed to create record"));
     } finally {
       setSubmitting(false);
     }
@@ -154,6 +155,7 @@ export default function FiioPage() {
             <input
               className="form-input"
               type="date"
+              min={new Date().toISOString().split("T")[0]}
               required
               value={form.income_date}
               onChange={(e) =>
@@ -231,6 +233,7 @@ export default function FiioPage() {
             <input
               className="form-input"
               type="date"
+              min={new Date().toISOString().split("T")[0]}
               required
               value={form.income_date}
               onChange={(e) =>
@@ -293,6 +296,7 @@ export default function FiioPage() {
             <input
               className="form-input"
               type="date"
+              min={new Date().toISOString().split("T")[0]}
               required
               value={form.expense_date}
               onChange={(e) =>
@@ -360,6 +364,7 @@ export default function FiioPage() {
           <input
             className="form-input"
             type="date"
+            min={new Date().toISOString().split("T")[0]}
             required
             value={form.expense_date}
             onChange={(e) => setForm({ ...form, expense_date: e.target.value })}
@@ -417,7 +422,7 @@ export default function FiioPage() {
             <span className="badge badge-blue">{item.status}</span>
           </td>
           <td className="table-td text-gray-500 text-sm">
-            {item.description || "—"}
+            {item.description || "â€”"}
           </td>
         </tr>
       );
@@ -436,7 +441,7 @@ export default function FiioPage() {
             <span className="badge badge-blue">{item.status}</span>
           </td>
           <td className="table-td text-gray-500 text-sm">
-            {item.description || "—"}
+            {item.description || "â€”"}
           </td>
         </tr>
       );
@@ -457,7 +462,7 @@ export default function FiioPage() {
             <span className="badge badge-yellow">{item.status}</span>
           </td>
           <td className="table-td text-gray-500 text-sm">
-            {item.description || "—"}
+            {item.description || "â€”"}
           </td>
         </tr>
       );
@@ -475,7 +480,7 @@ export default function FiioPage() {
           <span className="badge badge-yellow">{item.status}</span>
         </td>
         <td className="table-td text-gray-500 text-sm">
-          {item.description || "—"}
+          {item.description || "â€”"}
         </td>
       </tr>
     );
@@ -487,7 +492,7 @@ export default function FiioPage() {
         "ID",
         "Date",
         "Employee",
-        "Hours × Rate",
+        "Hours Ã— Rate",
         "Amount",
         "Status",
         "Description",
@@ -507,7 +512,7 @@ export default function FiioPage() {
         "ID",
         "Date",
         "Employee",
-        "Hours × Rate",
+        "Hours Ã— Rate",
         "Amount",
         "Status",
         "Description",

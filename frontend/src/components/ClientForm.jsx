@@ -1,4 +1,5 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { X, Loader } from "lucide-react";
 
@@ -38,7 +39,7 @@ export default function ClientForm({ client, onClose, onSubmit }) {
       }
       onSubmit();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save client");
+      setError(apiError(err, "Failed to save client"));
       setLoading(false);
     }
   };

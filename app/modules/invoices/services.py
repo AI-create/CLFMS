@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.modules.invoices.models import Invoice
-from app.modules.invoices.schemas import GenerateInvoiceRequest
+from app.modules.invoices.schemas import GenerateInvoiceRequest, UpdateInvoiceRequest
 from app.services.invoice_service import generate_invoice, get_invoice, total_paid_for_invoice
 
 
@@ -108,3 +108,23 @@ def recalculate_overdue(db: Session) -> dict[str, int]:
         db.commit()
 
     return {"updated": updated, "scanned": len(invoices)}
+
+
+def update_invoice(db: Session, invoice_id: int, payload: UpdateInvoiceRequest) -> Invoice:
+    inv = get_invoice_by_id(db, invoice_id)
+    if not inv:
+        raise ValueError("Invoice not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(inv, field, value)
+    db.add(inv)
+    db.commit()
+    db.refresh(inv)
+    return inv
+
+
+def delete_invoice(db: Session, invoice_id: int) -> None:
+    inv = get_invoice_by_id(db, invoice_id)
+    if not inv:
+        raise ValueError("Invoice not found")
+    db.delete(inv)
+    db.commit()

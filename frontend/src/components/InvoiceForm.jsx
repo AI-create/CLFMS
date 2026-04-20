@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { X, Loader } from "lucide-react";
 
@@ -59,7 +60,7 @@ export default function InvoiceForm({ onClose, onSubmit }) {
       await axios.post(`${API_URL}/invoices/generate`, payload);
       onSubmit();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to generate invoice");
+      setError(apiError(err, "Failed to generate invoice"));
     } finally {
       setLoading(false);
     }

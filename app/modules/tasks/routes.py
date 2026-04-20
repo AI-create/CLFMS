@@ -21,6 +21,33 @@ def create_task(
     return api_success(TaskOut.model_validate(task))
 
 
+@router.delete("/tasks/{task_id}")
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm"])),
+):
+    task = services.get_task(db, task_id)
+    if not task:
+        return api_error("NOT_FOUND", "Task not found", http_status=404)
+
+    services.delete_task(db, task_id)
+    return api_success({"message": "Task deleted successfully"})
+
+
+@router.put("/tasks/{task_id}")
+def update_task(
+    task_id: int,
+    payload: CreateTask,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "operations", "project_manager", "pm", "sales", "finance"])),
+):
+    task = services.update_task(db, task_id, payload)
+    if not task:
+        return api_error("NOT_FOUND", "Task not found", http_status=404)
+    return api_success(TaskOut.model_validate(task))
+
+
 @router.get("/tasks")
 def list_tasks(
     project_id: int | None = None,

@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+import logging
 
 from app.core.database import get_db
 from app.core.response import api_success, api_error
 from app.core.security import require_roles
+from app.modules.closure.models import ProjectClosure, ClosureStatus
 from app.modules.closure.schemas import (
     ClosureChecklistItemCreate,
     ClosureChecklistItemUpdate,
@@ -17,6 +20,8 @@ from app.modules.closure.schemas import (
     ProjectClosureProgressResponse,
 )
 from app.modules.closure.services import ClosureService
+
+logger = logging.getLogger("clfms")
 
 router = APIRouter(prefix="/closure", tags=["Closure"])
 
@@ -161,7 +166,8 @@ def add_checklist_item(
         item = ClosureService.add_closure_checklist_item(db, project_id, payload)
         return api_success(ClosureChecklistItemResponse.from_orm(item).model_dump())
     except ValueError as e:
-        return api_error("NOT_FOUND", str(e), 404)
+        logger.warning("Closure checklist add rejected for project_id=%s: %s", project_id, e)
+        return api_error("NOT_FOUND", "Project or closure not found", 404)
 
 
 @router.get("/projects/{project_id}/checklist", response_model=dict)
@@ -233,3 +239,25 @@ def delete_checklist_item(
         return api_error("NOT_FOUND", "Checklist item not found", 404)
 
     return api_success({"message": "Checklist item deleted successfully"})
+
+
+@router.get("/project-locks", response_model=dict)
+def get_project_locks(
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "project_manager", "pm", "finance"])),
+):
+    """Return lock status for all projects that have a closure record.
+
+    Lock rules:
+    - completed / archived  → can_edit=False, can_delete=False
+    - escalation            → can_edit=True,  can_delete=False
+    - in_progress / on_hold → not locked (omitted from result)
+    """
+    closures = db.execute(select(ProjectClosure)).scalars().all()
+    locks = {}
+    for c in closures:
+        if c.status in (ClosureStatus.COMPLETED, ClosureStatus.ARCHIVED):
+            locks[c.project_id] = {"status": c.status, "can_edit": False, "can_delete": False}
+        elif c.status == ClosureStatus.ESCALATION:
+            locks[c.project_id] = {"status": c.status, "can_edit": True, "can_delete": False}
+    return api_success(locks)

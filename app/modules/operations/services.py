@@ -74,6 +74,16 @@ class OperationsService:
         db.refresh(employee)
         return employee
 
+    @staticmethod
+    def delete_employee(db: Session, employee_id: int) -> bool:
+        """Delete employee by ID"""
+        employee = OperationsService.get_employee(db, employee_id)
+        if not employee:
+            return False
+        db.delete(employee)
+        db.commit()
+        return True
+
     # ===== ACTIVITY OPERATIONS =====
 
     @staticmethod

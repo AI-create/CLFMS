@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, UploadFile, File, Query, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import Optional
+import logging
+import os
+import re
 
 from app.core.database import get_db
 from app.core.response import api_success, api_error
@@ -18,6 +21,8 @@ from app.modules.files.schemas import (
 )
 from app.modules.files.services import FileService
 
+logger = logging.getLogger("clfms")
+
 router = APIRouter(prefix="/files", tags=["Files"])
 
 # Constants
@@ -26,6 +31,17 @@ ALLOWED_EXTENSIONS = {
     "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
     "txt", "jpg", "jpeg", "png", "gif", "zip", "rar", "7z"
 }
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Strip path components and dangerous characters from filenames."""
+    # Take only the basename (prevent path traversal via filename)
+    filename = os.path.basename(filename)
+    # Remove any character that isn't alphanumeric, dot, hyphen, or underscore
+    filename = re.sub(r"[^\w.\-]", "_", filename)
+    # Collapse multiple consecutive dots (prevent extension spoofing like .exe.pdf)
+    filename = re.sub(r"\.{2,}", ".", filename)
+    return filename or "upload"
 
 
 def validate_file(file: UploadFile) -> tuple:
@@ -42,7 +58,8 @@ def validate_file(file: UploadFile) -> tuple:
             detail=f"File type .{ext} not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    return file.filename, file.content_type or "application/octet-stream"
+    safe_filename = _sanitize_filename(file.filename)
+    return safe_filename, file.content_type or "application/octet-stream"
 
 
 @router.post("/upload", response_model=dict)
@@ -86,7 +103,8 @@ async def upload_file(
 
         return api_success(FileUploadResponse.from_orm(file_upload).model_dump())
     except Exception as e:
-        return api_error("UPLOAD_FAILED", str(e), 500)
+        logger.error("File upload failed: %s", e, exc_info=True)
+        return api_error("UPLOAD_FAILED", "File upload failed", 500)
 
 
 @router.get("", response_model=dict)
@@ -157,14 +175,25 @@ def download_file(
     if not file:
         return api_error("NOT_FOUND", "File not found", 404)
 
+    # Path traversal protection — ensure resolved path stays inside the uploads directory
+    upload_root = os.path.realpath(FileService.get_file_upload_dir())
+    file_real = os.path.realpath(file.file_path)
+    if not file_real.startswith(upload_root + os.sep) and file_real != upload_root:
+        logger.warning("Path traversal attempt detected for file_id=%s: %s", file_id, file.file_path)
+        return api_error("FORBIDDEN", "Access denied", 403)
+
+    if not os.path.isfile(file_real):
+        return api_error("NOT_FOUND", "File not found on disk", 404)
+
     try:
         return FileResponse(
-            path=file.file_path,
+            path=file_real,
             filename=file.file_name,
             media_type=file.mime_type
         )
     except Exception as e:
-        return api_error("DOWNLOAD_FAILED", str(e), 500)
+        logger.error("File download failed for file_id=%s: %s", file_id, e, exc_info=True)
+        return api_error("DOWNLOAD_FAILED", "File download failed", 500)
 
 
 @router.put("/{file_id}", response_model=dict)
@@ -249,7 +278,8 @@ def restore_file_version(
 
         return api_success(FileUploadResponse.from_orm(file).model_dump())
     except Exception as e:
-        return api_error("RESTORE_FAILED", str(e), 500)
+        logger.error("File restore failed for file_id=%s: %s", file_id, e, exc_info=True)
+        return api_error("RESTORE_FAILED", "File restore failed", 500)
 
 
 @router.post("/{file_id}/new-version", response_model=dict)
@@ -294,7 +324,8 @@ async def create_file_version(
             "new_version": FileVersionResponse.from_orm(version).model_dump()
         })
     except Exception as e:
-        return api_error("VERSION_FAILED", str(e), 500)
+        logger.error("New version creation failed for file_id=%s: %s", file_id, e, exc_info=True)
+        return api_error("VERSION_FAILED", "Version creation failed", 500)
 
 
 @router.get("/{file_id}", response_model=dict)

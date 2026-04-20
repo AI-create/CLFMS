@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -36,7 +37,7 @@ export default function DocumentsPage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching documents:", err);
-      setError(err.response?.data?.detail || "Failed to load documents");
+      setError(apiError(err, "Failed to load documents"));
     } finally {
       setLoading(false);
     }
@@ -51,7 +52,7 @@ export default function DocumentsPage() {
       setGenerateForm({ type: "invoice", entity_id: "" });
       await fetchDocuments();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to generate document");
+      setError(apiError(err, "Failed to generate document"));
     } finally {
       setGenerating(false);
     }
@@ -208,7 +209,7 @@ export default function DocumentsPage() {
               className="bg-white p-4 rounded-lg shadow border border-gray-200 hover:shadow-md transition"
             >
               <div className="flex items-start gap-3 mb-3">
-                <span className="text-3xl">📄</span>
+                <span className="text-3xl">ðŸ“„</span>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-gray-900">
                     {doc.doc_type?.toUpperCase()} #{doc.entity_id}

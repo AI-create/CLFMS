@@ -2,7 +2,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.modules.finance.models import Expense
-from app.modules.finance.schemas import CreateExpense
+from app.modules.finance.schemas import CreateExpense, UpdateExpense
 from app.modules.invoices.models import Invoice
 from app.modules.payments.models import Payment
 
@@ -36,6 +36,30 @@ def list_expenses(
     total = query.count()
     expenses = query.order_by(Expense.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
     return expenses, total
+
+
+def get_expense(db: Session, expense_id: int):
+    return db.query(Expense).filter(Expense.id == expense_id).first()
+
+
+def update_expense(db: Session, expense_id: int, payload: UpdateExpense):
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        return None
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(expense, field, value)
+    db.commit()
+    db.refresh(expense)
+    return expense
+
+
+def delete_expense(db: Session, expense_id: int) -> bool:
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        return False
+    db.delete(expense)
+    db.commit()
+    return True
 
 
 def get_project_financial_summary(db: Session, *, project_id: int) -> dict[str, float]:

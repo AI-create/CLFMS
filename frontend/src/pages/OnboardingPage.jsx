@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { AlertCircle, Loader, CheckCircle, Clock, Plus } from "lucide-react";
 
@@ -43,7 +44,7 @@ export default function OnboardingPage() {
       setInitNotes("");
       fetchOnboarding();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to initiate onboarding");
+      setError(apiError(err, "Failed to initiate onboarding"));
     } finally {
       setInitiating(false);
     }
@@ -76,7 +77,7 @@ export default function OnboardingPage() {
     } catch (err) {
       console.error("Error fetching onboarding processes:", err);
       setError(
-        err.response?.data?.detail || "Failed to load onboarding processes",
+        apiError(err, "Failed to load onboarding processes"),
       );
     } finally {
       setLoading(false);
@@ -90,7 +91,7 @@ export default function OnboardingPage() {
       });
       fetchOnboarding();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to update status");
+      setError(apiError(err, "Failed to update status"));
     }
   };
 

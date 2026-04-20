@@ -12,6 +12,14 @@ class CreateExpense(BaseModel):
     expense_date: Optional[date] = None
 
 
+class UpdateExpense(BaseModel):
+    project_id: Optional[int] = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    expense_date: Optional[date] = None
+
+
 class ExpenseOut(BaseModel):
     id: int
     project_id: int

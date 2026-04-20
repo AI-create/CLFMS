@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -78,7 +79,7 @@ export default function ResearchPage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching research:", err);
-      setError(err.response?.data?.detail || "Failed to load research data");
+      setError(apiError(err, "Failed to load research data"));
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ export default function ResearchPage() {
       setEditingItem(null);
       fetchResearch();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save research");
+      setError(apiError(err, "Failed to save research"));
     }
   };
 
@@ -112,7 +113,7 @@ export default function ResearchPage() {
       await axios.delete(`${API_URL}/research-projects/${id}`);
       setResearch(research.filter((r) => r.id !== id));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete research");
+      setError(apiError(err, "Failed to delete research"));
     }
   };
 
@@ -130,7 +131,7 @@ export default function ResearchPage() {
       setExpForm(EMPTY_EXP_FORM);
       fetchResearch();
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to add experiment");
+      alert(apiError(err, "Failed to add experiment"));
     } finally {
       setExpSubmitting(false);
     }
@@ -144,19 +145,18 @@ export default function ResearchPage() {
       if (!payload.title) delete payload.title;
       if (!payload.observations) delete payload.observations;
       if (!payload.recorded_by) delete payload.recorded_by;
-      await axios.post(
-        `${API_URL}/experiments/${logExpId}/logs`,
-        payload,
-      );
+      await axios.post(`${API_URL}/experiments/${logExpId}/logs`, payload);
       setShowLogForm(false);
       setLogForm(EMPTY_LOG_FORM);
       // Refresh the specific project
-      const res = await axios.get(`${API_URL}/research-projects/${logProjectId}`);
+      const res = await axios.get(
+        `${API_URL}/research-projects/${logProjectId}`,
+      );
       setResearch((prev) =>
         prev.map((r) => (r.id === logProjectId ? res.data.data : r)),
       );
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to add log");
+      alert(apiError(err, "Failed to add log"));
     } finally {
       setLogSubmitting(false);
     }
@@ -283,33 +283,43 @@ export default function ResearchPage() {
                 type="text"
                 placeholder="Experiment Title *"
                 value={expForm.title}
-                onChange={(e) => setExpForm({ ...expForm, title: e.target.value })}
+                onChange={(e) =>
+                  setExpForm({ ...expForm, title: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 required
               />
               <textarea
                 placeholder="Description"
                 value={expForm.description}
-                onChange={(e) => setExpForm({ ...expForm, description: e.target.value })}
+                onChange={(e) =>
+                  setExpForm({ ...expForm, description: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-16"
               />
               <textarea
                 placeholder="Objective"
                 value={expForm.objective}
-                onChange={(e) => setExpForm({ ...expForm, objective: e.target.value })}
+                onChange={(e) =>
+                  setExpForm({ ...expForm, objective: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-16"
               />
               <input
                 type="text"
                 placeholder="Hypothesis"
                 value={expForm.hypothesis}
-                onChange={(e) => setExpForm({ ...expForm, hypothesis: e.target.value })}
+                onChange={(e) =>
+                  setExpForm({ ...expForm, hypothesis: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <div className="grid grid-cols-2 gap-4">
                 <select
                   value={expForm.status}
-                  onChange={(e) => setExpForm({ ...expForm, status: e.target.value })}
+                  onChange={(e) =>
+                    setExpForm({ ...expForm, status: e.target.value })
+                  }
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="planned">Planned</option>
@@ -321,7 +331,9 @@ export default function ResearchPage() {
                   type="text"
                   placeholder="Conducted By"
                   value={expForm.conducted_by}
-                  onChange={(e) => setExpForm({ ...expForm, conducted_by: e.target.value })}
+                  onChange={(e) =>
+                    setExpForm({ ...expForm, conducted_by: e.target.value })
+                  }
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -356,27 +368,35 @@ export default function ResearchPage() {
                 type="text"
                 placeholder="Log Title (optional)"
                 value={logForm.title}
-                onChange={(e) => setLogForm({ ...logForm, title: e.target.value })}
+                onChange={(e) =>
+                  setLogForm({ ...logForm, title: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <textarea
                 placeholder="Notes *"
                 value={logForm.notes}
-                onChange={(e) => setLogForm({ ...logForm, notes: e.target.value })}
+                onChange={(e) =>
+                  setLogForm({ ...logForm, notes: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-24"
                 required
               />
               <textarea
                 placeholder="Observations"
                 value={logForm.observations}
-                onChange={(e) => setLogForm({ ...logForm, observations: e.target.value })}
+                onChange={(e) =>
+                  setLogForm({ ...logForm, observations: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-16"
               />
               <input
                 type="text"
                 placeholder="Recorded By"
                 value={logForm.recorded_by}
-                onChange={(e) => setLogForm({ ...logForm, recorded_by: e.target.value })}
+                onChange={(e) =>
+                  setLogForm({ ...logForm, recorded_by: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <div className="flex gap-2 justify-end">
@@ -500,8 +520,7 @@ export default function ResearchPage() {
                         setFormData({
                           name: item.name,
                           description: item.description || "",
-                          research_type:
-                            item.research_type || "internal_rnd",
+                          research_type: item.research_type || "internal_rnd",
                           objectives: item.objectives || "",
                           status: item.status || "planned",
                         });
@@ -661,4 +680,3 @@ export default function ResearchPage() {
     </div>
   );
 }
-

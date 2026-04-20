@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.response import api_error, api_success
 from app.core.security import require_roles
 from app.modules.finance import services as finance_services
-from app.modules.finance.schemas import CreateExpense, ExpenseOut, FinancialSummaryOut
+from app.modules.finance.schemas import CreateExpense, UpdateExpense, ExpenseOut, FinancialSummaryOut
 
 
 router = APIRouter(tags=["Finance"])
@@ -27,7 +27,7 @@ def list_expenses(
     project_id: Optional[int] = Query(None),
     category: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
     db: Session = Depends(get_db),
     _user=Depends(require_roles(["admin", "finance"])),
 ):
@@ -38,6 +38,31 @@ def list_expenses(
         "data": [ExpenseOut.model_validate(e).model_dump() for e in expenses],
         "meta": {"total": total, "page": page, "limit": limit},
     })
+
+
+@router.put("/expenses/{expense_id}")
+def update_expense(
+    expense_id: int,
+    payload: UpdateExpense,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    expense = finance_services.update_expense(db, expense_id, payload)
+    if not expense:
+        return api_error("NOT_FOUND", "Expense not found", http_status=404)
+    return api_success(ExpenseOut.model_validate(expense))
+
+
+@router.delete("/expenses/{expense_id}")
+def delete_expense(
+    expense_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    deleted = finance_services.delete_expense(db, expense_id)
+    if not deleted:
+        return api_error("NOT_FOUND", "Expense not found", http_status=404)
+    return api_success({"deleted": True})
 
 
 @router.get("/finance/project/{project_id}")

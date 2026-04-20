@@ -12,6 +12,7 @@ class ClosureStatus(str, enum.Enum):
     COMPLETED = "completed"
     ON_HOLD = "on_hold"
     ARCHIVED = "archived"
+    ESCALATION = "escalation"
 
 
 class ProjectClosure(Base):

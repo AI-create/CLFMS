@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -75,7 +76,7 @@ export default function EmployeesPage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching employees:", err);
-      setError(err.response?.data?.detail || "Failed to load employees");
+      setError(apiError(err, "Failed to load employees"));
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ export default function EmployeesPage() {
       setEditingEmployee(null);
       fetchEmployees();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save employee");
+      setError(apiError(err, "Failed to save employee"));
     }
   };
 
@@ -136,7 +137,7 @@ export default function EmployeesPage() {
       await axios.delete(`${API_URL}/employees/${id}`);
       setEmployees(employees.filter((e) => e.id !== id));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete employee");
+      setError(apiError(err, "Failed to delete employee"));
     }
   };
 
@@ -148,7 +149,7 @@ export default function EmployeesPage() {
       });
       alert("Clocked in successfully!");
     } catch (err) {
-      alert(err.response?.data?.detail || "Clock-in failed");
+      alert(apiError(err, "Clock-in failed"));
     } finally {
       setClockLoading((prev) => ({ ...prev, [empId]: false }));
     }
@@ -162,7 +163,7 @@ export default function EmployeesPage() {
       });
       alert("Clocked out successfully!");
     } catch (err) {
-      alert(err.response?.data?.detail || "Clock-out failed");
+      alert(apiError(err, "Clock-out failed"));
     } finally {
       setClockLoading((prev) => ({ ...prev, [empId]: false }));
     }
@@ -179,8 +180,10 @@ export default function EmployeesPage() {
         status: activityForm.status,
         billable: activityForm.billable,
       };
-      if (activityForm.description) payload.description = activityForm.description;
-      if (activityForm.project_id) payload.project_id = parseInt(activityForm.project_id);
+      if (activityForm.description)
+        payload.description = activityForm.description;
+      if (activityForm.project_id)
+        payload.project_id = parseInt(activityForm.project_id);
       if (activityForm.notes) payload.notes = activityForm.notes;
 
       await axios.post(
@@ -192,7 +195,7 @@ export default function EmployeesPage() {
       // Refresh activities for this employee
       fetchActivities(activityEmpId);
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to add activity");
+      alert(apiError(err, "Failed to add activity"));
     } finally {
       setActivitySubmitting(false);
     }
@@ -329,6 +332,7 @@ export default function EmployeesPage() {
                   </label>
                   <input
                     type="date"
+                    min={new Date().toISOString().split("T")[0]}
                     value={activityForm.activity_date}
                     onChange={(e) =>
                       setActivityForm({
@@ -512,7 +516,7 @@ export default function EmployeesPage() {
                     <p className="text-sm text-gray-600">{emp.email}</p>
                     <div className="flex gap-4 mt-2 text-sm text-gray-500">
                       {emp.designation && <span>{emp.designation}</span>}
-                      {emp.department && <span>· {emp.department}</span>}
+                      {emp.department && <span>Â· {emp.department}</span>}
                       {emp.hourly_rate && (
                         <span className="flex items-center gap-1">
                           <DollarSign size={13} />
@@ -611,8 +615,7 @@ export default function EmployeesPage() {
                         size={20}
                       />
                     </div>
-                  ) : !activities[emp.id] ||
-                    activities[emp.id].length === 0 ? (
+                  ) : !activities[emp.id] || activities[emp.id].length === 0 ? (
                     <p className="text-gray-400 text-sm">
                       No activities logged yet.
                     </p>

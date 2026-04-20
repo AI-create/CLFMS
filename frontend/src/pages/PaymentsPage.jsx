@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { Plus, Edit, Trash2, AlertCircle, Loader, Search } from "lucide-react";
 import PaymentForm from "../components/PaymentForm";
@@ -25,7 +26,7 @@ export default function PaymentsPage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching payments:", err);
-      setError(err.response?.data?.detail || "Failed to load payments");
+      setError(apiError(err, "Failed to load payments"));
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,7 @@ export default function PaymentsPage() {
       await axios.delete(`${API_URL}/payments/${paymentId}`);
       setPayments(payments.filter((p) => p.id !== paymentId));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete payment");
+      setError(apiError(err, "Failed to delete payment"));
     }
   };
 

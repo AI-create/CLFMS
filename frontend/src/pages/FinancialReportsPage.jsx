@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   BarChart,
@@ -46,7 +47,7 @@ export default function FinancialReportsPage() {
       setTopProjects(projRes.data);
     } catch (err) {
       console.error("Error fetching report data:", err);
-      setError(err.response?.data?.detail || "Failed to load reports");
+      setError(apiError(err, "Failed to load reports"));
     } finally {
       setLoading(false);
     }

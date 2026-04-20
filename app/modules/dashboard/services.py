@@ -118,29 +118,61 @@ def get_30day_trend(db: Session) -> list[dict]:
 def get_top_projects(db: Session, limit: int = 5) -> list[dict]:
     """Get top performing projects by profit"""
     projects = db.query(Project).all()
-    
+
     project_stats = []
     for project in projects:
-        income = db.execute(
-            select(func.coalesce(func.sum(HourlyIncome.amount) + func.sum(ProjectIncome.amount), 0.0))
-            .select_from(HourlyIncome)
-            .where(HourlyIncome.project_id == project.id)
-        ).scalar_one() or 0.0
+        pid = project.id
 
-        expense = db.execute(
-            select(func.coalesce(func.sum(HourlyExpense.amount) + func.sum(ProjectExpense.amount), 0.0))
-            .select_from(HourlyExpense)
-            .where(HourlyExpense.project_id == project.id)
-        ).scalar_one() or 0.0
+        # Income: payments received for invoices belonging to this project
+        payment_income = float(db.execute(
+            select(func.coalesce(func.sum(Payment.amount), 0.0))
+            .select_from(Payment)
+            .join(Invoice, Invoice.id == Payment.invoice_id)
+            .where(Invoice.project_id == pid)
+        ).scalar_one() or 0.0)
 
-        profit = income - expense
-        profit_margin = (profit / income * 100) if income > 0 else 0.0
+        # Income: FI-IO project income entries
+        project_income = float(db.execute(
+            select(func.coalesce(func.sum(ProjectIncome.amount), 0.0))
+            .where(ProjectIncome.project_id == pid)
+        ).scalar_one() or 0.0)
+
+        # Income: FI-IO hourly income entries
+        hourly_income = float(db.execute(
+            select(func.coalesce(func.sum(HourlyIncome.amount), 0.0))
+            .where(HourlyIncome.project_id == pid)
+        ).scalar_one() or 0.0)
+
+        total_income = payment_income + project_income + hourly_income
+
+        # Expense: direct expense records for this project
+        direct_expense = float(db.execute(
+            select(func.coalesce(func.sum(Expense.amount), 0.0))
+            .where(Expense.project_id == pid)
+        ).scalar_one() or 0.0)
+
+        # Expense: FI-IO project expense entries
+        project_expense = float(db.execute(
+            select(func.coalesce(func.sum(ProjectExpense.amount), 0.0))
+            .where(ProjectExpense.project_id == pid)
+        ).scalar_one() or 0.0)
+
+        # Expense: FI-IO hourly expense entries
+        hourly_expense = float(db.execute(
+            select(func.coalesce(func.sum(HourlyExpense.amount), 0.0))
+            .where(HourlyExpense.project_id == pid)
+        ).scalar_one() or 0.0)
+
+        total_expense = direct_expense + project_expense + hourly_expense
+
+        profit = total_income - total_expense
+        profit_margin = (profit / total_income * 100) if total_income > 0 else 0.0
 
         project_stats.append({
-            "project_id": project.id,
+            "project_id": pid,
             "project_name": project.name,
-            "income": round(income, 2),
-            "expense": round(expense, 2),
+            "income": round(total_income, 2),
+            "expense": round(total_expense, 2),
             "profit": round(profit, 2),
             "margin": round(profit_margin, 2),
         })

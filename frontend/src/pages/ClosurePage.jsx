@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -47,7 +48,7 @@ export default function ClosurePage() {
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const projRes = await axios.get(`${API_URL}/projects`);
+      const projRes = await axios.get(`${API_URL}/projects?limit=200`);
       const allProjects = projRes.data.data?.data || [];
       setProjects(allProjects);
 
@@ -68,7 +69,7 @@ export default function ClosurePage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching closures:", err);
-      setError(err.response?.data?.detail || "Failed to load closure data");
+      setError(apiError(err, "Failed to load closure data"));
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export default function ClosurePage() {
       setInitFormData({ deliverables_description: "", closure_notes: "" });
       fetchAll();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to initiate closure");
+      setError(apiError(err, "Failed to initiate closure"));
     } finally {
       setInitiating(false);
     }
@@ -112,7 +113,7 @@ export default function ClosurePage() {
       setShowEditForm(false);
       fetchAll();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to update closure");
+      setError(apiError(err, "Failed to update closure"));
     }
   };
 
@@ -124,9 +125,7 @@ export default function ClosurePage() {
       );
       fetchAll();
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Failed to mark deliverables complete",
-      );
+      setError(apiError(err, "Failed to mark deliverables complete"));
     }
   };
 
@@ -140,7 +139,7 @@ export default function ClosurePage() {
       );
       fetchAll();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to mark payment received");
+      setError(apiError(err, "Failed to mark payment received"));
     }
   };
 
@@ -153,9 +152,7 @@ export default function ClosurePage() {
       );
       fetchAll();
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Failed to mark closure completed",
-      );
+      setError(apiError(err, "Failed to mark closure completed"));
     }
   };
 
@@ -167,7 +164,7 @@ export default function ClosurePage() {
       });
       fetchAll();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to archive closure");
+      setError(apiError(err, "Failed to archive closure"));
     }
   };
 
@@ -177,22 +174,51 @@ export default function ClosurePage() {
       completed: "bg-green-100 text-green-800",
       on_hold: "bg-yellow-100 text-yellow-800",
       archived: "bg-gray-100 text-gray-800",
+      escalation: "bg-orange-100 text-orange-800",
     };
     return map[status] || "bg-gray-100 text-gray-700";
   };
 
-  // Projects that don't already have a closure
-  const initiatedProjectIds = new Set(closures.map((c) => c.project_id));
+  const statusLabel = (status) => {
+    const labels = {
+      in_progress: "In Progress",
+      completed: "Completed",
+      on_hold: "On Hold",
+      archived: "Archived",
+      escalation: "Escalation",
+    };
+    return labels[status] || status;
+  };
+
+  // Only treat active closures as "occupied" — completed/archived allow re-initiation
+  const activeClosureStatuses = new Set([
+    "in_progress",
+    "on_hold",
+    "escalation",
+  ]);
+  const initiatedProjectIds = new Set(
+    closures
+      .filter((c) => activeClosureStatuses.has(c.status))
+      .map((c) => c.project_id),
+  );
   const availableProjects = projects.filter(
     (p) => !initiatedProjectIds.has(p.id),
   );
 
-  const filteredClosures = closures.filter(
-    (c) =>
-      !searchTerm ||
-      c.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.status?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const activeClosures = closures.filter((c) =>
+    activeClosureStatuses.has(c.status),
   );
+  const doneClosures = closures.filter(
+    (c) => c.status === "completed" || c.status === "archived",
+  );
+
+  const filterClosure = (c) =>
+    !searchTerm ||
+    c.project_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.status?.toLowerCase().includes(searchTerm.toLowerCase());
+
+  const filteredActive = activeClosures.filter(filterClosure);
+  const filteredDone = doneClosures.filter(filterClosure);
 
   return (
     <div className="space-y-6">
@@ -321,7 +347,7 @@ export default function ClosurePage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">
-              Edit Closure — {editingClosure.project_name}
+              Edit Closure â€” {editingClosure.project_name}
             </h2>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
@@ -358,7 +384,7 @@ export default function ClosurePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Satisfaction (1–5)
+                  Client Satisfaction (1â€“5)
                 </label>
                 <input
                   type="number"
@@ -411,7 +437,7 @@ export default function ClosurePage() {
         <div className="flex justify-center py-12">
           <Loader className="animate-spin text-primary-600" size={32} />
         </div>
-      ) : filteredClosures.length === 0 ? (
+      ) : filteredActive.length === 0 && filteredDone.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-lg shadow">
           <p className="text-gray-500 text-lg">No closure records found</p>
           <p className="text-gray-400 mt-2 text-sm">
@@ -420,170 +446,274 @@ export default function ClosurePage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredClosures.map((closure) => (
-            <div
-              key={closure.id}
-              className="bg-white rounded-lg shadow border border-gray-200 p-6"
-            >
-              {/* Closure Header */}
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {closure.project_name || `Project #${closure.project_id}`}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Initiated:{" "}
-                    {new Date(
-                      closure.closure_initiated_at,
-                    ).toLocaleDateString()}
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${statusBadge(closure.status)}`}
-                >
-                  {closure.status?.replace("_", " ")}
-                </span>
-              </div>
-
-              {/* Progress Row */}
-              <div className="flex flex-wrap gap-6 mb-4 text-sm">
-                <div className="flex items-center gap-2">
-                  {closure.deliverables_completed ? (
-                    <CheckCircle size={16} className="text-green-600" />
-                  ) : (
-                    <Clock size={16} className="text-yellow-600" />
-                  )}
-                  <span
-                    className={
-                      closure.deliverables_completed
-                        ? "text-green-700"
-                        : "text-gray-600"
-                    }
+        <div className="space-y-6">
+          {/* Active Closures */}
+          {filteredActive.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Active Closures
+              </h2>
+              <div className="space-y-4">
+                {filteredActive.map((closure) => (
+                  <div
+                    key={closure.id}
+                    className="bg-white rounded-lg shadow border border-gray-200 p-6"
                   >
-                    Deliverables
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {closure.final_payment_received ? (
-                    <CheckCircle size={16} className="text-green-600" />
-                  ) : (
-                    <Clock size={16} className="text-yellow-600" />
-                  )}
-                  <span
-                    className={
-                      closure.final_payment_received
-                        ? "text-green-700"
-                        : "text-gray-600"
-                    }
-                  >
-                    Final Payment
-                  </span>
-                </div>
-                {closure.client_satisfaction_rating && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-500">
-                      {"★".repeat(closure.client_satisfaction_rating)}
-                    </span>
-                    <span className="text-gray-300">
-                      {"★".repeat(5 - closure.client_satisfaction_rating)}
-                    </span>
-                  </div>
-                )}
-                {closure.final_profit !== undefined && (
-                  <div className="ml-auto">
-                    <span className="text-xs text-gray-500">
-                      Final Profit:{" "}
-                    </span>
-                    <span
-                      className={`font-semibold ${closure.final_profit >= 0 ? "text-green-600" : "text-red-600"}`}
-                    >
-                      ${closure.final_profit.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes / Feedback */}
-              {(closure.closure_notes || closure.client_feedback) && (
-                <div className="text-sm text-gray-600 mb-4 space-y-1 bg-gray-50 p-3 rounded">
-                  {closure.closure_notes && (
-                    <p>
-                      <span className="font-medium">Notes:</span>{" "}
-                      {closure.closure_notes}
-                    </p>
-                  )}
-                  {closure.client_feedback && (
-                    <p>
-                      <span className="font-medium">Client Feedback:</span>{" "}
-                      {closure.client_feedback}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Actions */}
-              {closure.status !== "archived" && (
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
-                  {!closure.deliverables_completed && (
-                    <button
-                      onClick={() =>
-                        handleMarkDeliverablesComplete(closure.project_id)
-                      }
-                      className="px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
-                    >
-                      ✓ Deliverables Done
-                    </button>
-                  )}
-                  {!closure.final_payment_received && (
-                    <button
-                      onClick={() =>
-                        handleMarkPaymentReceived(closure.project_id)
-                      }
-                      className="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
-                    >
-                      $ Payment Received
-                    </button>
-                  )}
-                  {closure.status === "in_progress" &&
-                    closure.deliverables_completed &&
-                    closure.final_payment_received && (
-                      <button
-                        onClick={() => handleMarkCompleted(closure.project_id)}
-                        className="px-3 py-1.5 text-sm bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100"
+                    {/* Closure Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {closure.project_name ||
+                            `Project #${closure.project_id}`}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Initiated:{" "}
+                          {new Date(
+                            closure.closure_initiated_at,
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${statusBadge(closure.status)}`}
                       >
-                        Mark Complete
-                      </button>
+                        {statusLabel(closure.status)}
+                      </span>
+                    </div>
+
+                    {/* Progress Row */}
+                    <div className="flex flex-wrap gap-6 mb-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        {closure.deliverables_completed ? (
+                          <CheckCircle size={16} className="text-green-600" />
+                        ) : (
+                          <Clock size={16} className="text-yellow-600" />
+                        )}
+                        <span
+                          className={
+                            closure.deliverables_completed
+                              ? "text-green-700"
+                              : "text-gray-600"
+                          }
+                        >
+                          Deliverables
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {closure.final_payment_received ? (
+                          <CheckCircle size={16} className="text-green-600" />
+                        ) : (
+                          <Clock size={16} className="text-yellow-600" />
+                        )}
+                        <span
+                          className={
+                            closure.final_payment_received
+                              ? "text-green-700"
+                              : "text-gray-600"
+                          }
+                        >
+                          Final Payment
+                        </span>
+                      </div>
+                      {closure.client_satisfaction_rating && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-500">
+                            {"â˜…".repeat(closure.client_satisfaction_rating)}
+                          </span>
+                          <span className="text-gray-300">
+                            {"â˜…".repeat(
+                              5 - closure.client_satisfaction_rating,
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {closure.final_profit !== undefined && (
+                        <div className="ml-auto">
+                          <span className="text-xs text-gray-500">
+                            Final Profit:{" "}
+                          </span>
+                          <span
+                            className={`font-semibold ${closure.final_profit >= 0 ? "text-green-600" : "text-red-600"}`}
+                          >
+                            ${closure.final_profit.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notes / Feedback */}
+                    {(closure.closure_notes || closure.client_feedback) && (
+                      <div className="text-sm text-gray-600 mb-4 space-y-1 bg-gray-50 p-3 rounded">
+                        {closure.closure_notes && (
+                          <p>
+                            <span className="font-medium">Notes:</span>{" "}
+                            {closure.closure_notes}
+                          </p>
+                        )}
+                        {closure.client_feedback && (
+                          <p>
+                            <span className="font-medium">
+                              Client Feedback:
+                            </span>{" "}
+                            {closure.client_feedback}
+                          </p>
+                        )}
+                      </div>
                     )}
-                  <button
-                    onClick={() => {
-                      setEditingClosure(closure);
-                      setEditFormData({
-                        closure_notes: closure.closure_notes || "",
-                        client_feedback: closure.client_feedback || "",
-                        client_satisfaction_rating:
-                          closure.client_satisfaction_rating || "",
-                        deliverables_description:
-                          closure.deliverables_description || "",
-                      });
-                      setShowEditForm(true);
-                    }}
-                    className="px-3 py-1.5 text-sm bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 flex items-center gap-1"
-                  >
-                    <Edit size={14} /> Edit
-                  </button>
-                  {closure.status === "completed" && (
-                    <button
-                      onClick={() => handleArchive(closure.project_id)}
-                      className="px-3 py-1.5 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex items-center gap-1"
-                    >
-                      <Archive size={14} /> Archive
-                    </button>
-                  )}
-                </div>
-              )}
+
+                    {/* Actions */}
+                    {closure.status !== "archived" && (
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
+                        {!closure.deliverables_completed && (
+                          <button
+                            onClick={() =>
+                              handleMarkDeliverablesComplete(closure.project_id)
+                            }
+                            className="px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                          >
+                            âœ“ Deliverables Done
+                          </button>
+                        )}
+                        {!closure.final_payment_received && (
+                          <button
+                            onClick={() =>
+                              handleMarkPaymentReceived(closure.project_id)
+                            }
+                            className="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
+                          >
+                            $ Payment Received
+                          </button>
+                        )}
+                        {closure.status === "in_progress" &&
+                          closure.deliverables_completed &&
+                          closure.final_payment_received && (
+                            <button
+                              onClick={() =>
+                                handleMarkCompleted(closure.project_id)
+                              }
+                              className="px-3 py-1.5 text-sm bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100"
+                            >
+                              Mark Complete
+                            </button>
+                          )}
+                        <button
+                          onClick={() => {
+                            setEditingClosure(closure);
+                            setEditFormData({
+                              closure_notes: closure.closure_notes || "",
+                              client_feedback: closure.client_feedback || "",
+                              client_satisfaction_rating:
+                                closure.client_satisfaction_rating || "",
+                              deliverables_description:
+                                closure.deliverables_description || "",
+                            });
+                            setShowEditForm(true);
+                          }}
+                          className="px-3 py-1.5 text-sm bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 flex items-center gap-1"
+                        >
+                          <Edit size={14} /> Edit
+                        </button>
+                        {closure.status === "completed" && (
+                          <button
+                            onClick={() => handleArchive(closure.project_id)}
+                            className="px-3 py-1.5 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex items-center gap-1"
+                          >
+                            <Archive size={14} /> Archive
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+
+          {/* Completed / Archived Closures */}
+          {filteredDone.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Completed Closures
+              </h2>
+              <div className="space-y-4">
+                {filteredDone.map((closure) => (
+                  <div
+                    key={closure.id}
+                    className="bg-white rounded-lg shadow border border-gray-200 p-6 opacity-80"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {closure.project_name ||
+                            `Project #${closure.project_id}`}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Initiated:{" "}
+                          {new Date(
+                            closure.closure_initiated_at,
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${statusBadge(closure.status)}`}
+                      >
+                        {statusLabel(closure.status)}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-6 text-sm">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={16} className="text-green-600" />
+                        <span className="text-green-700">Deliverables</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={16} className="text-green-600" />
+                        <span className="text-green-700">Final Payment</span>
+                      </div>
+                      {closure.client_satisfaction_rating && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-500">
+                            {"★".repeat(closure.client_satisfaction_rating)}
+                          </span>
+                          <span className="text-gray-300">
+                            {"★".repeat(5 - closure.client_satisfaction_rating)}
+                          </span>
+                        </div>
+                      )}
+                      {closure.final_profit !== undefined && (
+                        <div className="ml-auto">
+                          <span className="text-xs text-gray-500">
+                            Final Profit:{" "}
+                          </span>
+                          <span
+                            className={`font-semibold ${closure.final_profit >= 0 ? "text-green-600" : "text-red-600"}`}
+                          >
+                            ${closure.final_profit.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {(closure.closure_notes || closure.client_feedback) && (
+                      <div className="text-sm text-gray-600 mt-3 space-y-1 bg-gray-50 p-3 rounded">
+                        {closure.closure_notes && (
+                          <p>
+                            <span className="font-medium">Notes:</span>{" "}
+                            {closure.closure_notes}
+                          </p>
+                        )}
+                        {closure.client_feedback && (
+                          <p>
+                            <span className="font-medium">
+                              Client Feedback:
+                            </span>{" "}
+                            {closure.client_feedback}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

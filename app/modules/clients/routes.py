@@ -68,6 +68,32 @@ def get_client(
     return api_success(ClientOut.model_validate(client))
 
 
+@router.delete("/clients/{client_id}")
+def delete_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "sales"])),
+):
+    client = services.get_client(db, client_id)
+    if not client:
+        return api_error("NOT_FOUND", "Client not found", http_status=404)
+
+    name = client.company_name
+    services.delete_client(db, client_id)
+
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="client",
+        entity_id=client_id,
+        entity_name=name,
+        description=f"Deleted client: {name}"
+    )
+
+    return api_success({"message": f"Client '{name}' deleted successfully"})
+
+
 @router.put("/clients/{client_id}")
 def update_client(
     client_id: int,

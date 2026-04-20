@@ -1,22 +1,25 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
+import bcrypt
 from fastapi import HTTPException, Request, status
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from .config import settings
 
-# Use a backend that works reliably in dev without native bcrypt quirks.
-pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+# Use bcrypt directly — passlib 1.7.4 is incompatible with bcrypt ≥ 4.0.
+_BCRYPT_ROUNDS = 12
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=_BCRYPT_ROUNDS)).decode()
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return pwd_context.verify(password, password_hash)
+    try:
+        return bcrypt.checkpw(password.encode(), password_hash.encode())
+    except Exception:
+        return False
 
 
 def create_access_token(*, subject: str, role: str) -> str:

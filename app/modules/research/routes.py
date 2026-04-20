@@ -320,3 +320,29 @@ def get_reproducible_experiments(
         "reproducible_count": len(experiments),
         "experiments": [ExperimentOut.model_validate(e).model_dump() for e in experiments]
     })
+
+
+@router.delete("/research-projects/{project_id}")
+def delete_research_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "project_manager"])),
+):
+    project = services.ResearchService.get_research_project(db, project_id)
+    if not project:
+        return api_error("NOT_FOUND", "Research project not found", http_status=404)
+
+    name = project.name
+    services.ResearchService.delete_research_project(db, project_id)
+
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="research_project",
+        entity_id=project_id,
+        entity_name=name,
+        description=f"Deleted research project: {name}"
+    )
+
+    return api_success({"message": f"Research project '{name}' deleted successfully"})

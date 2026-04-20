@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -10,8 +11,10 @@ import {
   CheckCircle,
   Clock,
   X,
+  Lock,
 } from "lucide-react";
 import TaskForm from "../components/TaskForm";
+import { useProjectLocks } from "../hooks/useProjectLocks";
 
 const API_URL = "/api/v1";
 
@@ -30,6 +33,7 @@ export default function TasksPage() {
     notes: "",
   });
   const [timeLogSaving, setTimeLogSaving] = useState(false);
+  const { getProjectLock } = useProjectLocks();
 
   useEffect(() => {
     fetchTasks();
@@ -43,7 +47,7 @@ export default function TasksPage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching tasks:", err);
-      setError(err.response?.data?.detail || "Failed to load tasks");
+      setError(apiError(err, "Failed to load tasks"));
     } finally {
       setLoading(false);
     }
@@ -56,7 +60,7 @@ export default function TasksPage() {
       await axios.delete(`${API_URL}/tasks/${id}`);
       setTasks(tasks.filter((t) => t.id !== id));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete task");
+      setError(apiError(err, "Failed to delete task"));
     }
   };
 
@@ -74,7 +78,7 @@ export default function TasksPage() {
       setTimeLogTask(null);
       setTimeLogForm({ hours: "", log_date: "", notes: "" });
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to log time");
+      setError(apiError(err, "Failed to log time"));
     } finally {
       setTimeLogSaving(false);
     }
@@ -205,31 +209,74 @@ export default function TasksPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setTimeLogTask(task);
-                      setTimeLogForm({ hours: "", log_date: "", notes: "" });
-                    }}
-                    className="p-2 text-purple-600 hover:bg-purple-50 rounded"
-                    title="Log Time"
-                  >
-                    <Clock size={20} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingTask(task);
-                      setShowForm(true);
-                    }}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                  >
-                    <Edit size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(task.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                  {(() => {
+                    const lock = getProjectLock(task.project_id);
+                    return (
+                      <>
+                        <button
+                          onClick={() => {
+                            setTimeLogTask(task);
+                            setTimeLogForm({
+                              hours: "",
+                              log_date: "",
+                              notes: "",
+                            });
+                          }}
+                          className="p-2 text-purple-600 hover:bg-purple-50 rounded"
+                          title="Log Time"
+                        >
+                          <Clock size={20} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!lock.can_edit) return;
+                            setEditingTask(task);
+                            setShowForm(true);
+                          }}
+                          disabled={!lock.can_edit}
+                          title={
+                            !lock.can_edit
+                              ? `Project is ${lock.status} — editing disabled`
+                              : "Edit"
+                          }
+                          className={`p-2 rounded ${
+                            lock.can_edit
+                              ? "text-blue-600 hover:bg-blue-50"
+                              : "text-gray-400 cursor-not-allowed bg-gray-50"
+                          }`}
+                        >
+                          {lock.locked && !lock.can_edit ? (
+                            <Lock size={20} />
+                          ) : (
+                            <Edit size={20} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!lock.can_delete) return;
+                            handleDelete(task.id);
+                          }}
+                          disabled={!lock.can_delete}
+                          title={
+                            !lock.can_delete
+                              ? `Project is ${lock.status} — deletion disabled`
+                              : "Delete"
+                          }
+                          className={`p-2 rounded ${
+                            lock.can_delete
+                              ? "text-red-600 hover:bg-red-50"
+                              : "text-gray-400 cursor-not-allowed bg-gray-50"
+                          }`}
+                        >
+                          {lock.locked && !lock.can_delete ? (
+                            <Lock size={20} />
+                          ) : (
+                            <Trash2 size={20} />
+                          )}
+                        </button>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -243,7 +290,7 @@ export default function TasksPage() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">
-                  Log Time — {timeLogTask.title}
+                  Log Time â€” {timeLogTask.title}
                 </h2>
                 <button
                   onClick={() => setTimeLogTask(null)}
@@ -272,6 +319,7 @@ export default function TasksPage() {
                   <input
                     className="form-input"
                     type="date"
+                    min={new Date().toISOString().split("T")[0]}
                     value={timeLogForm.log_date}
                     onChange={(e) =>
                       setTimeLogForm({

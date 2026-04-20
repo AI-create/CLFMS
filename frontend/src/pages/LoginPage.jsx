@@ -1,4 +1,5 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { AlertCircle, Loader } from "lucide-react";
 
@@ -34,9 +35,10 @@ export default function LoginPage({ onLoginSuccess }) {
       onLoginSuccess(token, user);
     } catch (err) {
       setError(
-        err.response?.data?.detail ||
-          err.message ||
-          "Failed to login. Please check your credentials.",
+        apiError(
+          err,
+          err.message || "Failed to login. Please check your credentials.",
+        ),
       );
     } finally {
       setLoading(false);

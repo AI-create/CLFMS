@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { X, Loader } from "lucide-react";
 
@@ -52,7 +53,7 @@ export default function PaymentForm({ payment, onClose, onSubmit }) {
       }
       onSubmit();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to save payment");
+      setError(apiError(err, "Failed to save payment"));
     } finally {
       setLoading(false);
     }
@@ -149,6 +150,7 @@ export default function PaymentForm({ payment, onClose, onSubmit }) {
               <input
                 type="date"
                 name="payment_date"
+                min={new Date().toISOString().split("T")[0]}
                 value={formData.payment_date}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"

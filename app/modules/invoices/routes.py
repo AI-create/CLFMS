@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.response import api_error, api_success
 from app.core.security import require_roles
-from app.modules.invoices.schemas import GenerateInvoiceRequest, InvoiceOut
+from app.modules.invoices.schemas import GenerateInvoiceRequest, InvoiceOut, UpdateInvoiceRequest
 from app.modules.invoices import services as invoice_services
 from app.services.activity_logging_service import log_activity
 
@@ -139,3 +139,52 @@ def recalc_overdue(
     )
     
     return api_success(result)
+
+
+@router.put("/invoices/{invoice_id}")
+def update_invoice(
+    invoice_id: int,
+    payload: UpdateInvoiceRequest,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "finance"])),
+):
+    try:
+        inv = invoice_services.update_invoice(db, invoice_id, payload)
+    except ValueError:
+        return api_error("NOT_FOUND", "Invoice not found", http_status=404)
+
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="update",
+        entity_type="invoice",
+        entity_id=invoice_id,
+        entity_name=f"Invoice {inv.invoice_number}",
+        new_values=payload.model_dump(exclude_unset=True),
+        description=f"Updated invoice {inv.invoice_number}",
+    )
+
+    return api_success(InvoiceOut.model_validate(inv))
+
+
+@router.delete("/invoices/{invoice_id}")
+def delete_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin"])),
+):
+    try:
+        invoice_services.delete_invoice(db, invoice_id)
+    except ValueError:
+        return api_error("NOT_FOUND", "Invoice not found", http_status=404)
+
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="invoice",
+        entity_id=invoice_id,
+        description=f"Deleted invoice #{invoice_id}",
+    )
+
+    return api_success({"deleted": True})

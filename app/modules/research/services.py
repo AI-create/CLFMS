@@ -20,6 +20,14 @@ class ResearchService:
     """Service for research management operations"""
 
     @staticmethod
+    def delete_research_project(db: Session, project_id: int) -> bool:
+        project = ResearchService.get_research_project(db, project_id)
+        if not project:
+            return False
+        db.delete(project)
+        db.commit()
+        return True
+
     def create_research_project(db: Session, payload: CreateResearchProject) -> ResearchProject:
         """Create a new research project"""
         project = ResearchProject(**payload.model_dump())

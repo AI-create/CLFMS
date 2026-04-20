@@ -48,6 +48,15 @@ def login_and_issue_token(db: Session, *, email: str, password: str) -> tuple[st
 
 def ensure_default_admin(db: Session) -> None:
     # Create a default admin account to make local development usable.
+    # If the user already exists but has a non-bcrypt hash (e.g. legacy sha256_crypt),
+    # re-hash their password so logins continue to work after the bcrypt migration.
+    existing = get_user_by_email(db, settings.default_admin_email)
+    if existing:
+        if not existing.password_hash.startswith(("$2b$", "$2a$")):
+            existing.password_hash = get_password_hash(settings.default_admin_password)
+            db.commit()
+        return
+
     create_user(
         db,
         email=settings.default_admin_email,

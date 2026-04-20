@@ -125,6 +125,33 @@ def update_employee(
     return api_success(EmployeeOut.model_validate(employee))
 
 
+@router.delete("/employees/{employee_id}")
+def delete_employee(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(require_roles(["admin", "hr"])),
+):
+    """Delete employee"""
+    employee = services.OperationsService.get_employee(db, employee_id)
+    if not employee:
+        return api_error("NOT_FOUND", "Employee not found", http_status=404)
+    
+    name = employee.name
+    deleted = services.OperationsService.delete_employee(db, employee_id)
+    
+    log_activity(
+        db=db,
+        user_email=_user.get("email"),
+        action="delete",
+        entity_type="employee",
+        entity_id=employee_id,
+        entity_name=name,
+        description=f"Deleted employee: {name}"
+    )
+    
+    return api_success({"message": f"Employee '{name}' deleted successfully"})
+
+
 # ===== ACTIVITY ENDPOINTS =====
 
 @router.post("/employees/{employee_id}/activities")

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { Plus, Edit, AlertCircle, Loader, ClipboardList } from "lucide-react";
 
@@ -42,6 +43,7 @@ const EMPTY_FORM = {
 
 export default function OperationsPage() {
   const [assignments, setAssignments] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -53,8 +55,23 @@ export default function OperationsPage() {
   const [filterPriority, setFilterPriority] = useState("");
 
   useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  useEffect(() => {
     fetchAssignments();
   }, [filterStatus, filterPriority]);
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/employees`, {
+        params: { limit: 200 },
+      });
+      setEmployees(res.data?.data?.data || []);
+    } catch {
+      // non-critical
+    }
+  };
 
   const fetchAssignments = async () => {
     try {
@@ -70,7 +87,7 @@ export default function OperationsPage() {
       setAssignments(d?.data || []);
       setTotal(d?.meta?.total || 0);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load task assignments");
+      setError(apiError(err, "Failed to load task assignments"));
     } finally {
       setLoading(false);
     }
@@ -123,7 +140,7 @@ export default function OperationsPage() {
       setShowModal(false);
       fetchAssignments();
     } catch (err) {
-      alert(err.response?.data?.detail || "Operation failed");
+      alert(apiError(err, "Operation failed"));
     } finally {
       setSubmitting(false);
     }
@@ -140,7 +157,7 @@ export default function OperationsPage() {
         ),
       );
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to update status");
+      alert(apiError(err, "Failed to update status"));
     }
   };
 
@@ -276,10 +293,11 @@ export default function OperationsPage() {
                       </div>
                     </td>
                     <td className="table-td text-gray-600">
-                      Emp #{task.assigned_to_id}
+                      {employees.find((e) => e.id === task.assigned_to_id)
+                        ?.name || `Emp #${task.assigned_to_id}`}
                     </td>
                     <td className="table-td text-gray-500">
-                      {task.project_id ? `Project #${task.project_id}` : "—"}
+                      {task.project_id ? `Project #${task.project_id}` : "â€”"}
                     </td>
                     <td className="table-td">
                       <span
@@ -304,7 +322,7 @@ export default function OperationsPage() {
                       </select>
                     </td>
                     <td className="table-td text-gray-500 text-sm">
-                      {task.due_date || "—"}
+                      {task.due_date || "â€”"}
                     </td>
                     <td className="table-td">
                       <div className="flex items-center gap-2">
@@ -360,19 +378,22 @@ export default function OperationsPage() {
                   />
                 </div>
                 <div>
-                  <label className="form-label">
-                    Assign To (Employee ID) *
-                  </label>
-                  <input
+                  <label className="form-label">Assign To *</label>
+                  <select
                     className="form-input"
-                    type="number"
                     required
-                    min="1"
                     value={form.assigned_to_id}
                     onChange={(e) =>
                       setForm({ ...form, assigned_to_id: e.target.value })
                     }
-                  />
+                  >
+                    <option value="">Select employeeâ€¦</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.employee_id})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -410,6 +431,7 @@ export default function OperationsPage() {
                     <input
                       className="form-input"
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
                       value={form.start_date}
                       onChange={(e) =>
                         setForm({ ...form, start_date: e.target.value })
@@ -421,6 +443,7 @@ export default function OperationsPage() {
                     <input
                       className="form-input"
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
                       value={form.due_date}
                       onChange={(e) =>
                         setForm({ ...form, due_date: e.target.value })

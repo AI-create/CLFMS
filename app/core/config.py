@@ -1,5 +1,11 @@
 import os
+import secrets
+import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger("clfms")
+
+_WEAK_SECRETS = {"dev-secret-change-me", "secret", "changeme", "supersecret", "test-secret-key", ""}
 
 
 class Settings(BaseSettings):
@@ -15,7 +21,7 @@ class Settings(BaseSettings):
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./clfms.db")
 
     company_state: str = os.getenv("COMPANY_STATE", "KA")  # Karnataka (default)
-    default_admin_email: str = os.getenv("ADMIN_EMAIL", "admin@local")
+    default_admin_email: str = os.getenv("ADMIN_EMAIL", "admin@clfms.local")
     default_admin_password: str = os.getenv("ADMIN_PASSWORD", "admin123")
     default_admin_role: str = os.getenv("ADMIN_ROLE", "admin")
 
@@ -24,6 +30,24 @@ class Settings(BaseSettings):
     gst_igst_rate: float = float(os.getenv("GST_IGST_RATE", "0.18"))
 
     cors_origins: list[str] = []
+
+    def __init__(self, **values):
+        super().__init__(**values)
+        if self.secret_key in _WEAK_SECRETS or len(self.secret_key) < 32:
+            if not self.debug:
+                raise RuntimeError(
+                    "SECRET_KEY is insecure. Set a strong SECRET_KEY (>=32 chars) in your .env before running in production."
+                )
+            else:
+                logger.warning(
+                    "WARNING: SECRET_KEY is weak or default. Set a strong SECRET_KEY in .env. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+                )
+        if self.default_admin_password in ("admin123", "password", "admin", ""):
+            logger.warning(
+                "WARNING: Default admin password 'admin123' is in use. "
+                "Change ADMIN_PASSWORD in .env before deploying."
+            )
 
 
 settings = Settings()

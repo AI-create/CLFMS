@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { AlertCircle, Loader, Activity } from "lucide-react";
 
@@ -78,7 +79,7 @@ export default function ActivityLogsPage() {
       setLogs(d?.logs || []);
       setTotal(d?.total || 0);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load activity logs");
+      setError(apiError(err, "Failed to load activity logs"));
     } finally {
       setLoading(false);
     }
@@ -197,7 +198,7 @@ export default function ActivityLogsPage() {
                         {new Date(log.created_at).toLocaleString()}
                       </td>
                       <td className="table-td text-sm">
-                        {log.user_email || "—"}
+                        {log.user_email || "â€”"}
                       </td>
                       <td className="table-td">
                         <span
@@ -211,7 +212,7 @@ export default function ActivityLogsPage() {
                           <span className="text-gray-700">
                             {log.entity_type.replace(/_/g, " ")}
                             {log.entity_id ? ` #${log.entity_id}` : ""}
-                            {log.entity_name ? ` — ${log.entity_name}` : ""}
+                            {log.entity_name ? ` â€” ${log.entity_name}` : ""}
                           </span>
                         )}
                       </td>
@@ -223,7 +224,7 @@ export default function ActivityLogsPage() {
                         </span>
                       </td>
                       <td className="table-td text-gray-500 text-sm max-w-xs truncate">
-                        {log.description || "—"}
+                        {log.description || "â€”"}
                       </td>
                     </tr>
                   ))}
@@ -235,7 +236,7 @@ export default function ActivityLogsPage() {
             {totalPages > 1 && (
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <p className="text-sm text-gray-500">
-                  Showing {skip + 1}–{Math.min(skip + limit, total)} of {total}{" "}
+                  Showing {skip + 1}â€“{Math.min(skip + limit, total)} of {total}{" "}
                   logs
                 </p>
                 <div className="flex gap-2">

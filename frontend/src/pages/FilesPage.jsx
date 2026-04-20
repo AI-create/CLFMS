@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Upload,
@@ -57,7 +58,7 @@ export default function FilesPage() {
       setFiles(d?.files || []);
       setTotal(d?.total || 0);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load files");
+      setError(apiError(err, "Failed to load files"));
     } finally {
       setLoading(false);
     }
@@ -93,7 +94,7 @@ export default function FilesPage() {
       });
       fetchFiles();
     } catch (err) {
-      alert(err.response?.data?.detail || "Upload failed");
+      alert(apiError(err, "Upload failed"));
     } finally {
       setUploading(false);
     }
@@ -125,7 +126,7 @@ export default function FilesPage() {
       await axios.delete(`${API_URL}/files/${fileId}`);
       setFiles(files.filter((f) => f.id !== fileId));
     } catch (err) {
-      alert(err.response?.data?.detail || "Delete failed");
+      alert(apiError(err, "Delete failed"));
     }
   };
 
@@ -292,13 +293,13 @@ export default function FilesPage() {
                     <td className="table-td text-gray-500">
                       {file.entity_type && file.entity_id
                         ? `${file.entity_type} #${file.entity_id}`
-                        : "—"}
+                        : "â€”"}
                     </td>
                     <td className="table-td text-gray-500 text-sm">
                       {new Date(file.uploaded_at).toLocaleDateString()}
                     </td>
                     <td className="table-td text-gray-500 text-sm">
-                      {file.description || "—"}
+                      {file.description || "â€”"}
                     </td>
                     <td className="table-td">
                       <div className="flex items-center gap-2">

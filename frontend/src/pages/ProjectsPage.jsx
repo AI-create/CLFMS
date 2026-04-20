@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import {
   Plus,
@@ -10,8 +11,10 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
+  Lock,
 } from "lucide-react";
 import ProjectForm from "../components/ProjectForm";
+import { useProjectLocks } from "../hooks/useProjectLocks";
 
 const API_URL = "/api/v1";
 
@@ -25,6 +28,7 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState(null);
   const [expandedFinance, setExpandedFinance] = useState(null);
   const [financeSummary, setFinanceSummary] = useState({});
+  const { getProjectLock } = useProjectLocks();
 
   useEffect(() => {
     fetchProjects();
@@ -38,7 +42,7 @@ export default function ProjectsPage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching projects:", err);
-      setError(err.response?.data?.detail || "Failed to load projects");
+      setError(apiError(err, "Failed to load projects"));
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,7 @@ export default function ProjectsPage() {
       await axios.delete(`${API_URL}/projects/${projectId}`);
       setProjects(projects.filter((p) => p.id !== projectId));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete project");
+      setError(apiError(err, "Failed to delete project"));
     }
   };
 
@@ -218,35 +222,74 @@ export default function ProjectsPage() {
                 </div>
 
                 <div className="flex gap-2 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => handleToggleFinance(project.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded transition"
-                  >
-                    <TrendingUp size={16} />
-                    Finances
-                    {expandedFinance === project.id ? (
-                      <ChevronUp size={14} />
-                    ) : (
-                      <ChevronDown size={14} />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingProject(project);
-                      setShowForm(true);
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded transition"
-                  >
-                    <Edit size={16} />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(project.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition"
-                  >
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
+                  {(() => {
+                    const lock = getProjectLock(project.id);
+                    return (
+                      <>
+                        <button
+                          onClick={() => handleToggleFinance(project.id)}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded transition"
+                        >
+                          <TrendingUp size={16} />
+                          Finances
+                          {expandedFinance === project.id ? (
+                            <ChevronUp size={14} />
+                          ) : (
+                            <ChevronDown size={14} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!lock.can_edit) return;
+                            setEditingProject(project);
+                            setShowForm(true);
+                          }}
+                          disabled={!lock.can_edit}
+                          title={
+                            !lock.can_edit
+                              ? `Project is ${lock.status} — editing disabled`
+                              : undefined
+                          }
+                          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded transition ${
+                            lock.can_edit
+                              ? "text-blue-600 hover:bg-blue-50"
+                              : "text-gray-400 cursor-not-allowed bg-gray-50"
+                          }`}
+                        >
+                          {lock.locked && !lock.can_edit ? (
+                            <Lock size={14} />
+                          ) : (
+                            <Edit size={16} />
+                          )}
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!lock.can_delete) return;
+                            handleDelete(project.id);
+                          }}
+                          disabled={!lock.can_delete}
+                          title={
+                            !lock.can_delete
+                              ? `Project is ${lock.status} — deletion disabled`
+                              : undefined
+                          }
+                          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded transition ${
+                            lock.can_delete
+                              ? "text-red-600 hover:bg-red-50"
+                              : "text-gray-400 cursor-not-allowed bg-gray-50"
+                          }`}
+                        >
+                          {lock.locked && !lock.can_delete ? (
+                            <Lock size={14} />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                          Delete
+                        </button>
+                      </>
+                    );
+                  })()}
                 </div>
                 {expandedFinance === project.id && (
                   <div className="mt-4 pt-4 border-t border-gray-100">

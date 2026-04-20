@@ -18,6 +18,26 @@ def get_project(db: Session, project_id: int) -> Project | None:
     return db.execute(stmt).scalar_one_or_none()
 
 
+def delete_project(db: Session, project_id: int) -> bool:
+    project = get_project(db, project_id)
+    if not project:
+        return False
+    db.delete(project)
+    db.commit()
+    return True
+
+
+def update_project(db: Session, project_id: int, payload: CreateProject) -> Project | None:
+    project = get_project(db, project_id)
+    if not project:
+        return None
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(project, key, value)
+    db.commit()
+    db.refresh(project)
+    return project
+
+
 def list_projects(
     db: Session,
     *,

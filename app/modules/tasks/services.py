@@ -46,6 +46,26 @@ def list_tasks(
     return rows, int(total)
 
 
+def delete_task(db: Session, task_id: int) -> bool:
+    task = get_task(db, task_id)
+    if not task:
+        return False
+    db.delete(task)
+    db.commit()
+    return True
+
+
+def update_task(db: Session, task_id: int, payload: CreateTask) -> Task | None:
+    task = get_task(db, task_id)
+    if not task:
+        return None
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(task, key, value)
+    db.commit()
+    db.refresh(task)
+    return task
+
+
 def create_time_log(db: Session, payload: CreateTimeLog) -> TimeLog:
     time_log = TimeLog(**payload.model_dump())
     db.add(time_log)

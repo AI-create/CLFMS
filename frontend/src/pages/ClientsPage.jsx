@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import { apiError } from "../utils/apiError";
 import axios from "axios";
 import { Plus, Edit, Trash2, AlertCircle, Loader, Search } from "lucide-react";
 import ClientForm from "../components/ClientForm";
@@ -25,7 +26,7 @@ export default function ClientsPage() {
       setError(null);
     } catch (err) {
       console.error("Error fetching clients:", err);
-      setError(err.response?.data?.detail || "Failed to load clients");
+      setError(apiError(err, "Failed to load clients"));
     } finally {
       setLoading(false);
     }
@@ -38,7 +39,7 @@ export default function ClientsPage() {
       await axios.delete(`${API_URL}/clients/${clientId}`);
       setClients(clients.filter((c) => c.id !== clientId));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to delete client");
+      setError(apiError(err, "Failed to delete client"));
     }
   };
 
