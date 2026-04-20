@@ -108,6 +108,11 @@ app.include_router(research_router, prefix=API_PREFIX)
 app.include_router(operations_router, prefix=API_PREFIX)
 app.include_router(fiio_router, prefix=API_PREFIX)
 
+
+@app.get("/api/v1/health")
+def health_check():
+    return {"success": True, "message": "CLFMS API is running"}
+
 # Serve frontend static files (must be mounted after all routes)
 frontend_static_path = Path(__file__).parent / "static" / "frontend"
 if frontend_static_path.exists():
