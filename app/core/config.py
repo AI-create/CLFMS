@@ -31,11 +31,7 @@ class Settings(BaseSettings):
     gst_sgst_rate: float = float(os.getenv("GST_SGST_RATE", "0.09"))
     gst_igst_rate: float = float(os.getenv("GST_IGST_RATE", "0.18"))
 
-    cors_origins: list[str] = [
-        origin.strip()
-        for origin in os.getenv("CORS_ORIGINS", "").split(",")
-        if origin.strip()
-    ]
+    cors_origins_raw: str = os.getenv("CORS_ORIGINS", "")
 
     # SMTP email settings (for OTP verification emails)
     smtp_host: str = os.getenv("SMTP_HOST", "smtp.hostinger.com")
@@ -48,6 +44,7 @@ class Settings(BaseSettings):
     def __init__(self, **values):
         super().__init__(**values)
         is_prod = self.environment in {"production", "prod"}
+        cors_origins = self.cors_origins
         if self.secret_key in _WEAK_SECRETS or len(self.secret_key) < 32:
             if not self.debug:
                 raise RuntimeError(
@@ -63,11 +60,19 @@ class Settings(BaseSettings):
                 "WARNING: Default admin password 'admin123' is in use. "
                 "Change ADMIN_PASSWORD in .env before deploying."
             )
-        if is_prod and not self.cors_origins:
+        if is_prod and not cors_origins:
             raise RuntimeError(
                 "CORS_ORIGINS is not configured for production. "
                 "Set CORS_ORIGINS in .env to your trusted frontend origin(s)."
             )
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.cors_origins_raw.split(",")
+            if origin.strip()
+        ]
 
 
 settings = Settings()
