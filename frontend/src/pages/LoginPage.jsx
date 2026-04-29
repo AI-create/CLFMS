@@ -82,7 +82,7 @@ export default function LoginPage({ onLoginSuccess, onShowSignup }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@clfms.local"
+                placeholder="user@example.com"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 required
                 disabled={loading}
