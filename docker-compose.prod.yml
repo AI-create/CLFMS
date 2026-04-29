@@ -26,6 +26,10 @@ services:
     build: .
     container_name: clfms_backend
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     logging:
       driver: "json-file"
       options:
@@ -41,6 +45,9 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SEED_DEFAULT_ADMIN: ${SEED_DEFAULT_ADMIN:-false}
       COMPANY_STATE: KA
       DEBUG: "False"
     ports:
