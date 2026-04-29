@@ -1,6 +1,8 @@
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.core.config import settings
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security-hardening HTTP response headers to every response."""
@@ -24,6 +26,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Permissions-Policy"] = (
             "geolocation=(), camera=(), microphone=(), payment=()"
         )
+
+        # Enforce HTTPS in browsers for production deployments.
+        if not settings.debug:
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
 
         # Content Security Policy — tight for an SPA served from the same origin
         response.headers["Content-Security-Policy"] = (

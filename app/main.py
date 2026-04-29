@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.middleware.auth import AuthMiddleware
 from app.middleware.logging import RequestLoggingMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 
 # Import models so SQLAlchemy metadata is fully populated.
@@ -57,12 +58,13 @@ API_PREFIX = "/api/v1"
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
 
-    # Seed a default admin user for local development.
-    db = SessionLocal()
-    try:
-        ensure_default_admin(db)
-    finally:
-        db.close()
+    # Optional bootstrap: disabled by default in production.
+    if settings.seed_default_admin:
+        db = SessionLocal()
+        try:
+            ensure_default_admin(db)
+        finally:
+            db.close()
 
     yield
 
@@ -73,14 +75,17 @@ app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
-# CORS — always active with sensible defaults in dev; override via CORS_ORIGINS env var
-_cors_origins = settings.cors_origins or [
-    "http://localhost:5173",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:5173",
-]
+# CORS — strict in production, dev-friendly fallback locally
+_cors_origins = settings.cors_origins
+if settings.debug and not _cors_origins:
+    _cors_origins = [
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:5173",
+    ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,

@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     app_name: str = os.getenv("APP_NAME", "CLFMS")
     debug: bool = os.getenv("DEBUG", "true").lower() in ("1", "true", "yes")
+    environment: str = os.getenv("ENVIRONMENT", "development").lower().strip()
+    seed_default_admin: bool = os.getenv("SEED_DEFAULT_ADMIN", "false").lower() in ("1", "true", "yes")
 
     secret_key: str = os.getenv("SECRET_KEY", "dev-secret-change-me")
     jwt_algorithm: str = os.getenv("ALGORITHM", "HS256")
@@ -29,7 +31,11 @@ class Settings(BaseSettings):
     gst_sgst_rate: float = float(os.getenv("GST_SGST_RATE", "0.09"))
     gst_igst_rate: float = float(os.getenv("GST_IGST_RATE", "0.18"))
 
-    cors_origins: list[str] = []
+    cors_origins: list[str] = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
 
     # SMTP email settings (for OTP verification emails)
     smtp_host: str = os.getenv("SMTP_HOST", "smtp.hostinger.com")
@@ -41,6 +47,7 @@ class Settings(BaseSettings):
 
     def __init__(self, **values):
         super().__init__(**values)
+        is_prod = self.environment in {"production", "prod"}
         if self.secret_key in _WEAK_SECRETS or len(self.secret_key) < 32:
             if not self.debug:
                 raise RuntimeError(
@@ -55,6 +62,11 @@ class Settings(BaseSettings):
             logger.warning(
                 "WARNING: Default admin password 'admin123' is in use. "
                 "Change ADMIN_PASSWORD in .env before deploying."
+            )
+        if is_prod and not self.cors_origins:
+            raise RuntimeError(
+                "CORS_ORIGINS is not configured for production. "
+                "Set CORS_ORIGINS in .env to your trusted frontend origin(s)."
             )
 
 
