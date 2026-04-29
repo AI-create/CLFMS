@@ -36,11 +36,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Content Security Policy — tight for an SPA served from the same origin
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
+            "script-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             "font-src 'self'; "
             "connect-src 'self'; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
             "frame-ancestors 'none';"
         )
 

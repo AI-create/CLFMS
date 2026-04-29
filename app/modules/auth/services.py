@@ -1,6 +1,8 @@
 import logging
 import random
 import secrets
+import hashlib
+import hmac
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -18,6 +20,23 @@ OTP_EXPIRY_MINUTES = 10
 
 def _generate_otp() -> str:
     return f"{random.SystemRandom().randint(0, 999999):06d}"
+
+
+def _hash_otp(email: str, otp: str) -> str:
+    normalized_email = email.lower().strip()
+    normalized_otp = otp.strip()
+    material = f"{normalized_email}:{normalized_otp}".encode("utf-8")
+    return hmac.new(settings.secret_key.encode("utf-8"), material, hashlib.sha256).hexdigest()
+
+
+def _otp_matches(user: User, otp: str) -> bool:
+    if not user.otp_code:
+        return False
+
+    submitted_otp = otp.strip()
+    expected_hash = _hash_otp(user.email, submitted_otp)
+
+    return hmac.compare_digest(user.otp_code, expected_hash) or hmac.compare_digest(user.otp_code, submitted_otp)
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
@@ -73,15 +92,16 @@ def signup_user(db: Session, *, email: str, password: str, role: str = "research
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
+    normalized_email = email.lower().strip()
     otp = _generate_otp()
     user = User(
-        email=email.lower().strip(),
+        email=normalized_email,
         password_hash=get_password_hash(password),
         role=role,
         full_name=full_name,
         is_active=True,
         is_verified=False,
-        otp_code=otp,
+        otp_code=_hash_otp(normalized_email, otp),
         otp_expires_at=datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES),
     )
     db.add(user)
@@ -101,7 +121,7 @@ def verify_otp(db: Session, *, email: str, otp: str) -> User:
     if user.is_verified:
         return user  # Already verified — idempotent
 
-    if not user.otp_code or user.otp_code != otp.strip():
+    if not _otp_matches(user, otp):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP")
 
     if user.otp_expires_at and datetime.now(timezone.utc) > user.otp_expires_at:
@@ -127,7 +147,7 @@ def resend_otp(db: Session, *, email: str) -> None:
         return  # Already verified — nothing to do
 
     otp = _generate_otp()
-    user.otp_code = otp
+    user.otp_code = _hash_otp(user.email, otp)
     user.otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES)
     db.add(user)
     db.commit()
